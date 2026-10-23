@@ -1,0 +1,35 @@
+/* 기본 바탕과 브라우저 기본 요소 */
+*, *::before, *::after { box-sizing: border-box; }
+html { font-size: 112.5%; -webkit-text-size-adjust: 100%; }
+html, body { margin: 0; height: 100%; }
+body {
+  font-family: var(--font);
+  color: var(--on-green);
+  background: var(--green-deep);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+  word-break: keep-all;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+button:disabled { cursor: default; opacity: 0.38; }
+:focus-visible { outline: 3px solid var(--hint); outline-offset: 3px; }
+::selection { background: var(--hint); color: var(--ink); }
+h1, h2, p { margin: 0; }
+.ph { line-height: 1; }
+
+/* 휴대폰 세로로 솔리테어를 열면 돌려 달라는 안내 */
+.rotate-hint {
+  position: fixed; inset: 0; z-index: 4000; display: none;
+  flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+  background: var(--green-felt); color: var(--on-green); text-align: center; padding: 24px;
+  font-weight: 700; font-size: 1.4rem; line-height: 1.4;
+}
+.rotate-hint .ph { font-size: 5rem; }
+@media (orientation: portrait) and (max-width: 700px) {
+  html[data-screen="solitaire"] .rotate-hint { display: flex; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
+}

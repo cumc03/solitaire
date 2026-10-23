@@ -1,0 +1,41 @@
+/* 디자인 토큰: 색·글꼴·모서리·그림자는 여기서만 정한다(방향: .impeccable/surfaces/index-html.md, 레퍼런스 1번 갈래) */
+:root {
+  --font: 'Pretendard Variable', Pretendard, system-ui, -apple-system, sans-serif;
+
+  --green-deep: #0f4b2e;      /* 첫 화면·막대 바탕 */
+  --green-felt: #1a6a43;      /* 솔리테어 판 */
+  --board-light: #eef3f0;     /* 같은 그림 찾기·스도쿠 판(밝은 바탕) */
+  --green-action: #1f9d55;    /* 주 단추 하나 */
+  --paper: #fdfdfc;           /* 흰 카드·묶음 */
+  --ink: #111614;
+  --ink-soft: #5b665f;
+  --ink-faint: #9aa39d;
+  --line: rgb(17 22 20 / 0.08);
+  --on-green: #ffffff;
+  --on-green-soft: rgb(255 255 255 / 0.75);
+  --slot-line: rgb(255 255 255 / 0.26);
+  --hint: #ffd84d;
+  --error: #d4202c;
+  --red-suit: #d4202c;
+  --black-suit: #151515;
+  --card-back: #1f3f8f;
+  --medal-ink: #6b4a00;       /* 메달 위 판 수 글자 */
+  --tile-face: #fffdf7;       /* 사천성 패 앞면 */
+  --tile-side: #d9cfb4;       /* 사천성 패 두께(아랫면) */
+  --sudoku-given: #111614;
+  --sudoku-entry: #1f5fbf;
+  --select-strong: #b9e6c9;   /* 고른 칸·같은 숫자 */
+  --select-soft: #eef6f1;     /* 고른 칸과 같은 줄·칸·상자 */
+  --error-soft: #fde7e8;      /* 틀린 숫자 칸 바탕 */
+  --grid-line: #c9cfcb;       /* 스도쿠 얇은 칸선 */
+  --paper-muted: #f2f4f3;     /* 대화상자 보조 단추 */
+  --on-action: #ffffff;       /* 초록 단추 위 글자 */
+  --scrim: rgb(0 0 0 / 0.5);  /* 대화상자 뒤 어두운 막 */
+
+  --radius-group: 22px;
+  --radius-button: 16px;
+  --shadow-group: 0 10px 30px rgb(0 0 0 / 0.3);
+  --shadow-card: 0 1px 1px rgb(0 0 0 / 0.3), 0 2px 6px rgb(0 0 0 / 0.22);
+  --shadow-dialog: 0 24px 60px rgb(0 0 0 / 0.35);
+  --shadow-lift: 0 16px 30px rgb(0 0 0 / 0.38), 0 3px 8px rgb(0 0 0 / 0.25);
+}

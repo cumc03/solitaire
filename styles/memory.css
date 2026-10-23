@@ -1,0 +1,30 @@
+/* 같은 그림 찾기: 정사각 4×4 판 (src/games/memory/memory.js) */
+.game-screen--memory .game-board { display: grid; place-items: center; touch-action: manipulation; background: var(--board-light); }
+.memory-grid {
+  display: grid; gap: var(--gap, 10px);
+  grid-template-columns: repeat(4, var(--cw, 80px)); grid-template-rows: repeat(4, var(--ch, 80px));
+}
+.mcard { border: 0; padding: 0; background: none; perspective: 900px; cursor: pointer; }
+.mcard__inner {
+  position: relative; display: block; width: 100%; height: 100%;
+  transform-style: preserve-3d; transform: rotateY(180deg);
+  transition: transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.mcard.is-up .mcard__inner { transform: rotateY(0deg); }
+.mcard:not(.is-up):active .mcard__inner { transform: rotateY(180deg) scale(0.95); transition-duration: 80ms; }
+.mcard__face {
+  position: absolute; inset: 0; border-radius: 14%;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  box-shadow: var(--shadow-card);
+}
+.mcard__front { background: var(--paper); display: grid; place-items: center; overflow: hidden; }
+.mcard__front img { width: 88%; height: 88%; object-fit: contain; }
+.mcard__back {
+  transform: rotateY(180deg); background: var(--card-back);
+  box-shadow: inset 0 0 0 calc(var(--cw, 80px) * 0.05) var(--paper), var(--shadow-card);
+}
+/* 짝을 맞춘 카드는 살짝 커졌다가 제자리로, 이후 옅게 */
+.mcard.is-matched .mcard__front { animation: matched 420ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.mcard.is-matched { cursor: default; }
+.mcard.is-matched .mcard__front { outline: 4px solid var(--hint); outline-offset: 0; }
+@keyframes matched { 40% { transform: scale(1.08); } }

@@ -1,0 +1,46 @@
+/* 첫 화면: 짙은 초록 바탕 위 흰 묶음 목록 (src/home/home.js) */
+.home { position: fixed; inset: 0; overflow-y: auto; background: var(--green-deep); }
+.home__col { width: min(600px, 100%); margin: 0 auto; padding: max(28px, 6vh) 16px 64px; }
+
+.resume {
+  width: 100%; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 16px;
+  border: 0; border-radius: var(--radius-group); padding: 16px 18px; margin-bottom: 18px;
+  background: var(--paper); color: var(--ink); text-align: left;
+  box-shadow: var(--shadow-group);
+  transition: transform 90ms ease-out;
+}
+.resume:active { transform: scale(0.985); }
+.resume__icon { width: 56px; height: 56px; border-radius: 22%; object-fit: cover; }
+.resume__text { display: grid; gap: 4px; }
+.resume__text b { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; }
+.resume__text small { font-size: 1rem; color: var(--ink-soft); }
+.resume__text .keep { white-space: nowrap; } /* "찾은 짝 0개" 같은 묶음은 줄을 나누지 않는다 */
+.resume__go {
+  width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--green-action); color: var(--on-action); font-size: 1.6rem;
+}
+
+.game-list { background: var(--paper); border-radius: var(--radius-group); overflow: hidden; box-shadow: var(--shadow-group); }
+.game-list__row {
+  width: 100%; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 16px;
+  border: 0; background: none; color: var(--ink); text-align: left; padding: 14px 18px;
+  transition: background 90ms;
+}
+.game-list__row + .game-list__row { box-shadow: inset 0 1px 0 var(--line); }
+.game-list__row:active { background: rgb(17 22 20 / 0.05); }
+.game-list__icon { width: 72px; height: 72px; border-radius: 22%; object-fit: cover; box-shadow: 0 2px 6px rgb(0 0 0 / 0.18); }
+.game-list__text { display: grid; gap: 3px; }
+.game-list__text b { font-size: 1.45rem; font-weight: 700; letter-spacing: -0.01em; }
+.game-list__text small { font-size: 1rem; color: var(--ink-soft); }
+.game-list__row .ph { font-size: 1.4rem; color: var(--ink-faint); }
+
+/* 이번 달 컵 카드: 이어 하기 카드와 게임 목록 사이 */
+.month-cup {
+  width: 100%; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px;
+  border: 0; border-radius: var(--radius-group); padding: 14px 18px; margin-bottom: 18px;
+  background: var(--paper); color: var(--ink); box-shadow: var(--shadow-group);
+  transition: transform 90ms ease-out;
+}
+.month-cup:active { transform: scale(0.985); }
+.month-cup .ph { font-size: 1.4rem; color: var(--ink-faint); }
+.game-list__name { display: flex; align-items: center; gap: 8px; }

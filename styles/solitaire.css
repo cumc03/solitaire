@@ -1,0 +1,49 @@
+/* 솔리테어: 빈 자리와 카드 (src/games/solitaire/solitaire.js). 카드 크기 --cw·--ch는 배치 계산이 넣는다. */
+.game-screen--solitaire .game-board { --card-radius: calc(var(--cw, 80px) * 0.09); }
+
+.slot, .card { position: absolute; left: 0; top: 0; width: var(--cw); height: var(--ch); }
+.slot {
+  border-radius: var(--card-radius); border: 2px solid var(--slot-line);
+  display: grid; place-items: center; color: var(--slot-line);
+}
+.slot--foundation span { font-weight: 700; font-size: calc(var(--cw) * 0.42); }
+.slot--stock { cursor: pointer; }
+.slot--stock .ph { font-size: calc(var(--cw) * 0.4); opacity: 0; transition: opacity 160ms; }
+.game-board.stock-empty .slot--stock .ph { opacity: 1; }
+
+.card { cursor: grab; will-change: transform; }
+.card__inner {
+  position: relative; width: 100%; height: 100%;
+  transform-style: preserve-3d; transform: rotateY(180deg);
+  transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.card.is-up .card__inner { transform: rotateY(0deg); }
+/* 누르는 순간 살짝 눌리고, 들면 커지며 그림자가 깊어진다 */
+.card.is-up.is-pressed .card__inner { transform: scale(0.965); transition-duration: 80ms; }
+.card.is-up.is-lifted .card__inner { transform: scale(1.05); }
+.card__face {
+  position: absolute; inset: 0; border-radius: var(--card-radius);
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  box-shadow: var(--shadow-card); transition: box-shadow 160ms ease-out;
+}
+.card.is-lifted .card__face { box-shadow: var(--shadow-lift); }
+.card__back {
+  transform: rotateY(180deg); background: var(--card-back);
+  box-shadow: inset 0 0 0 calc(var(--cw, 80px) * 0.05) var(--paper), var(--shadow-card);
+}
+.card.is-buried .card__front { box-shadow: none; }
+.card.is-buried .card__back { box-shadow: inset 0 0 0 calc(var(--cw, 80px) * 0.05) var(--paper); }
+.card__front { background: var(--paper); overflow: hidden; }
+.card__front.is-red { color: var(--red-suit); }
+.card__front.is-black { color: var(--black-suit); }
+.card__index {
+  position: absolute; left: 7%; top: 3.5%;
+  display: flex; align-items: center; gap: calc(var(--cw) * 0.03); height: calc(var(--ch) * 0.25);
+}
+.card__rank { font-weight: 700; font-size: calc(var(--cw) * 0.38); line-height: 1; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.card__pip { width: calc(var(--cw) * 0.25); height: calc(var(--cw) * 0.25); fill: currentColor; }
+.card__center { position: absolute; width: 54%; height: 54%; left: 23%; bottom: 9%; fill: currentColor; }
+.card__court { position: absolute; right: 9%; bottom: 3%; font-weight: 700; font-size: calc(var(--cw) * 0.66); line-height: 1; letter-spacing: -0.04em; }
+
+.card.is-hint .card__face, .slot.is-hint { outline: 4px solid var(--hint); outline-offset: 2px; animation: hint-pulse 900ms ease-in-out 2; }
+@keyframes hint-pulse { 50% { outline-offset: 6px; } }

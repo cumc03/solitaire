@@ -1,0 +1,51 @@
+/* 대화상자: 게임 화면과 첫 화면이 함께 쓴다 (src/core/sheet.js) */
+.sheet {
+  position: fixed; inset: 0; z-index: 3500;
+  display: grid; place-items: center; padding: 16px;
+  background: transparent; transition: background 220ms ease-out;
+}
+.sheet[hidden] { display: none; }
+.sheet.is-open { background: var(--scrim); }
+.sheet__panel {
+  width: min(480px, 100%); padding: 28px; max-height: calc(100dvh - 32px); overflow-y: auto; border-radius: var(--radius-group);
+  background: var(--paper); color: var(--ink);
+  box-shadow: var(--shadow-dialog);
+  transform: translateY(18px) scale(0.98); opacity: 0;
+  transition: transform 320ms cubic-bezier(0.2, 0.9, 0.25, 1), opacity 200ms ease-out;
+}
+.sheet.is-open .sheet__panel { transform: none; opacity: 1; }
+.sheet__title { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 8px; }
+.sheet__body { font-size: 1.1rem; line-height: 1.5; color: var(--ink-soft); margin-bottom: 22px; }
+.sheet__extra { margin-bottom: 22px; }
+.sheet__choices { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.sheet__choices--1 { grid-template-columns: 1fr; }
+.sheet__choices--3 { grid-template-columns: repeat(3, 1fr); }
+.sheet__btn {
+  min-height: 84px; padding: 12px; border-radius: var(--radius-button);
+  border: 2px solid var(--line); background: var(--paper-muted);
+  display: grid; place-content: center; gap: 4px; text-align: center;
+  font-size: 1.15rem; transition: transform 90ms ease-out;
+}
+.sheet__btn b { font-weight: 800; }
+.sheet__btn small { font-size: 0.9rem; font-weight: 500; color: var(--ink-soft); }
+.sheet__btn.is-primary { background: var(--green-action); border-color: var(--green-action); color: var(--on-action); }
+.sheet__btn.is-primary small { color: rgb(255 255 255 / 0.85); }
+.sheet__btn:active { transform: scale(0.97); }
+.sheet__close {
+  margin-top: 14px; width: 100%; min-height: 52px; border: 0; background: none;
+  font-size: 1.05rem; font-weight: 600; color: var(--ink-soft);
+}
+/* 낮은 화면(휴대폰 가로): 여백·제목을 줄여 단추까지 한 화면에 들게 */
+@media (max-height: 520px) {
+  .sheet__panel { padding: 18px 22px; }
+  .sheet__title { font-size: 1.5rem; margin-bottom: 4px; }
+  .sheet__body { margin-bottom: 12px; }
+  .sheet__extra { margin-bottom: 12px; }
+  .sheet__btn { min-height: 60px; }
+}
+/* 낮고 넓은 화면: 본문·단추는 왼쪽, 덧붙인 덩어리(진행 막대 등)는 오른쪽 */
+@media (max-height: 520px) and (min-width: 700px) {
+  .sheet__panel:has(.sheet__extra) { width: min(780px, 100%); display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; align-content: start; }
+  .sheet__panel:has(.sheet__extra) > * { grid-column: 1; }
+  .sheet__panel:has(.sheet__extra) > .sheet__extra { grid-column: 2; grid-row: 1 / span 5; margin-bottom: 0; align-self: center; }
+}

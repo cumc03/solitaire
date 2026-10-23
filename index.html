@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko" data-screen="home">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f4b2e">
+  <title>솔리테어 · 같은 그림 찾기 · 스도쿠 · 사천성</title>
+  <!-- 홈 화면 아이콘: 이름 "솔리테어"(선생님 지정, 2026-10-23) -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/app/favicon-32.png">
+  <link rel="apple-touch-icon" href="assets/app/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="솔리테어">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="stylesheet" href="vendor/pretendard/pretendard.css">
+  <link rel="stylesheet" href="vendor/phosphor/regular/style.css">
+  <link rel="stylesheet" href="vendor/phosphor/fill/style.css">
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/home.css">
+  <link rel="stylesheet" href="styles/shell.css">
+  <link rel="stylesheet" href="styles/sheet.css">
+  <link rel="stylesheet" href="styles/progress.css">
+  <link rel="stylesheet" href="styles/solitaire.css">
+  <link rel="stylesheet" href="styles/memory.css">
+  <link rel="stylesheet" href="styles/sudoku.css">
+  <link rel="stylesheet" href="styles/sichuan.css">
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="suit-0" viewBox="0 0 24 24"><path d="M12 1.5c-2.6 4-9 7.6-9 12.4a4.6 4.6 0 0 0 7.7 3.4c-.3 2-1.2 3.6-2.8 5.2h8.2c-1.6-1.6-2.5-3.2-2.8-5.2A4.6 4.6 0 0 0 21 13.9c0-4.8-6.4-8.4-9-12.4z"/></symbol>
+    <symbol id="suit-1" viewBox="0 0 24 24"><path d="M12 21.6S2.4 15.8 2.1 9.4C1.9 5.6 4.5 3 7.6 3c2 0 3.4 1 4.4 2.6C13 4 14.4 3 16.4 3c3.1 0 5.7 2.6 5.5 6.4-.3 6.4-9.9 12.2-9.9 12.2z"/></symbol>
+    <symbol id="suit-2" viewBox="0 0 24 24"><path d="M12 1.2 20.4 12 12 22.8 3.6 12z"/></symbol>
+    <symbol id="suit-3" viewBox="0 0 24 24"><circle cx="12" cy="6.6" r="4.6"/><circle cx="6.4" cy="13.4" r="4.6"/><circle cx="17.6" cy="13.4" r="4.6"/><path d="M10.6 13h2.8c.2 3.6 1.1 6.4 3.2 9.3H7.4c2.1-2.9 3-5.7 3.2-9.3z"/></symbol>
+  </svg>
+
+  <main id="app"></main>
+
+  <div class="rotate-hint" role="status">
+    <i class="ph ph-device-rotate"></i>
+    <p>휴대폰을 가로로 돌려 주세요</p>
+  </div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

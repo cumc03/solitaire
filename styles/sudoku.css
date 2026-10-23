@@ -1,0 +1,52 @@
+/* 스도쿠: 흰 판과 숫자 단추 (src/games/sudoku/sudoku.js). 판 크기 --board는 화면 맞춤 계산이 넣는다. */
+.game-screen--sudoku .game-board { display: grid; place-items: center; touch-action: manipulation; user-select: none; background: var(--board-light); }
+.sudoku { display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 12px; }
+.sudoku.is-wide { flex-direction: row; gap: 28px; }
+
+.sudoku__grid {
+  width: var(--board, 360px); height: var(--board, 360px);
+  display: grid; grid-template-columns: repeat(var(--n), 1fr); grid-template-rows: repeat(var(--n), 1fr);
+  background: var(--paper); border-radius: var(--radius-button); overflow: hidden;
+  box-shadow: var(--shadow-group); border: 3px solid var(--ink);
+}
+.cell {
+  border: 0; padding: 0; margin: 0; background: var(--paper); color: var(--sudoku-entry);
+  border-right: 1px solid var(--grid-line); border-bottom: 1px solid var(--grid-line);
+  font-size: calc(var(--board, 360px) / var(--n) * 0.56); font-weight: 600; line-height: 1;
+  display: grid; place-items: center; position: relative;
+  font-variant-numeric: tabular-nums;
+}
+.cell.b-right { border-right: 3px solid var(--ink); }
+.cell.b-bottom { border-bottom: 3px solid var(--ink); }
+.cell.is-given { color: var(--sudoku-given); font-weight: 800; }
+.cell.is-peer { background: var(--select-soft); }
+.cell.is-same { background: var(--select-strong); }
+.cell.is-selected { background: var(--select-strong); box-shadow: inset 0 0 0 3px var(--green-action); }
+.cell.is-conflict { color: var(--error); background: var(--error-soft); }
+.cell.is-hinted { color: var(--green-action); }
+
+.notes {
+  position: absolute; inset: 6%;
+  display: grid; grid-template-columns: repeat(var(--bw), 1fr); grid-template-rows: repeat(var(--bh), 1fr);
+  font-size: calc(var(--board, 360px) / var(--n) * 0.2); font-weight: 600; color: var(--ink-soft);
+}
+.notes span { display: grid; place-items: center; }
+
+.sudoku__keys {
+  display: grid; grid-template-columns: repeat(var(--cols), 1fr); gap: 10px;
+  width: min(var(--board, 360px), 100%);
+}
+.sudoku.is-wide .sudoku__keys { width: auto; grid-template-columns: repeat(3, clamp(72px, 6.5vw, 104px)); }
+.sudoku.is-wide .key { min-height: clamp(64px, 8vh, 96px); font-size: clamp(1.8rem, 2.4vw, 2.4rem); }
+.sudoku.is-wide .key--erase { font-size: 1rem; }
+.key {
+  min-height: 64px; border: 0; border-radius: var(--radius-button);
+  background: var(--paper); color: var(--ink); outline: 1px solid var(--line);
+  font-size: 1.8rem; font-weight: 700; font-variant-numeric: tabular-nums;
+  box-shadow: var(--shadow-card);
+  transition: transform 70ms ease-out, background 90ms;
+}
+.key:active { transform: scale(0.95); background: var(--select-strong); }
+.key--erase { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 0.95rem; font-weight: 700; }
+.key--erase .ph { font-size: 1.5rem; }
+@media (max-height: 520px) { .key { min-height: 52px; font-size: 1.5rem; } }

@@ -1,0 +1,75 @@
+/* 사천성: 초록 판 위 상아색 패 (src/games/sichuan/sichuan.js). 패 크기 --tw/--th는 화면 맞춤 계산이 넣는다. */
+.game-screen--sichuan .game-board { display: grid; place-items: center; touch-action: manipulation; }
+.sichuan {
+  --thick: calc(var(--tw, 60px) * 0.07);
+  position: relative; display: grid; gap: var(--gap, 6px);
+  grid-template-columns: repeat(var(--cols), var(--tw, 60px));
+  grid-template-rows: repeat(var(--rows), var(--th, 72px));
+  padding: var(--pad, 20px);
+}
+.tile, .tile-slot { width: 100%; height: 100%; }
+.tile {
+  position: relative; border: 0; padding: 0; cursor: pointer;
+  border-radius: calc(var(--tw, 60px) * 0.16);
+  background: var(--tile-face);
+  box-shadow: 0 var(--thick) 0 var(--tile-side), var(--shadow-card);
+  display: grid; place-items: center;
+  transform: translateY(calc(var(--thick) * -1));
+  transition: transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 140ms, opacity 140ms;
+}
+.tile img { width: 84%; height: 84%; object-fit: contain; pointer-events: none; mix-blend-mode: multiply; }
+/* 누르는 순간 반응: 두께만큼 눌린다 */
+.tile:active { transform: translateY(0); box-shadow: 0 0 0 var(--tile-side), var(--shadow-card); transition-duration: 60ms; }
+.tile.is-picked {
+  transform: translateY(calc(var(--thick) * -2.4));
+  box-shadow: 0 var(--thick) 0 var(--tile-side), var(--shadow-lift), 0 0 0 4px var(--green-action);
+}
+.tile.is-hint { box-shadow: 0 var(--thick) 0 var(--tile-side), var(--shadow-card), 0 0 0 4px var(--hint); animation: tile-hint 900ms ease-in-out infinite; }
+.tile.is-shaking { animation: tile-shake 360ms ease-in-out; }
+.tile.is-back { animation: tile-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.is-dealing .tile { animation: tile-in 360ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards; animation-delay: calc(var(--d) * 9ms); }
+
+/* 짝이 맞으면: 들려 있던 패도 곧바로 제자리 높이로 내려와 두 장이 같은 높이에서 사라진다 */
+.tile.is-leaving, .tile.is-meeting {
+  pointer-events: none; transition: none;
+  box-shadow: 0 var(--thick) 0 var(--tile-side), var(--shadow-card), 0 0 0 4px var(--hint);
+}
+/* 떨어진 짝: 금빛 길이 그려진 뒤 제자리에서 줄며 사라진다 */
+.tile.is-leaving { animation: tile-out 260ms cubic-bezier(0.4, 0, 1, 1) 380ms both; }
+/* 바로 옆(좌우·위아래) 짝: 길 없이 서로 다가가 가운데에서 만나며 사라진다. --meet-x/y는 짝 쪽 방향(-1·0·1) */
+.tile.is-meeting { animation: tile-meet 240ms cubic-bezier(0.4, 0, 0.2, 1) both; }
+/* 쏠림 단계: 남은 패가 옛 자리에서 새 자리로 미끄러진다. --from-x/y는 옛 자리까지 칸 수 */
+.tile.is-sliding { animation: tile-slide 260ms cubic-bezier(0.3, 0, 0.2, 1) both; }
+
+/* 이은 길: 금빛 줄이 한 번에 그려진다 */
+.sichuan__path { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.sichuan__path polyline { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.path-glow { stroke: var(--hint); stroke-width: 14; opacity: 0.35; }
+.path-line { stroke: var(--hint); stroke-width: 5; stroke-dasharray: 1; stroke-dashoffset: 1; animation: path-draw 200ms ease-out forwards; }
+
+@keyframes path-draw { to { stroke-dashoffset: 0; } }
+@keyframes tile-hint { 50% { transform: translateY(calc(var(--thick) * -2)); } }
+@keyframes tile-shake { 20%, 60% { translate: -5px 0; } 40%, 80% { translate: 5px 0; } }
+@keyframes tile-out {
+  from { transform: translateY(calc(var(--thick) * -1)); }
+  to { transform: translateY(calc(var(--thick) * -1)) scale(0.7); opacity: 0; }
+}
+@keyframes tile-meet {
+  from { transform: translateY(calc(var(--thick) * -1)); }
+  to {
+    transform: translate(calc(var(--meet-x) * (var(--tw) + var(--gap)) / 2), calc(var(--thick) * -1 + var(--meet-y) * (var(--th) + var(--gap)) / 2)) scale(0.8);
+    opacity: 0;
+  }
+}
+@keyframes tile-slide {
+  from { transform: translate(calc(var(--from-x) * (var(--tw) + var(--gap))), calc(var(--thick) * -1 + var(--from-y) * (var(--th) + var(--gap)))); }
+}
+@keyframes tile-fade { to { opacity: 0; } }
+@keyframes tile-in { from { opacity: 0; transform: translateY(calc(var(--thick) * -1)) scale(0.82); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .is-dealing .tile, .tile.is-back, .tile.is-hint, .tile.is-shaking { animation: none; }
+  .tile.is-leaving, .tile.is-meeting { animation: tile-fade 200ms both; }
+  .tile.is-sliding { animation: none; }
+  .path-line { animation: none; stroke-dashoffset: 0; }
+}
