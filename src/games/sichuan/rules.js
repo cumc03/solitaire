@@ -7,7 +7,12 @@ import { shuffleInPlace } from '../../core/random.js';
 const DIRS = [[-1, 0], [1, 0], [0, -1], [0, 1]];
 
 // 두 패를 꺾임 두 번 이하로 잇는 길(테두리 좌표 포함 [행, 열] 목록). 없으면 null.
-export function findPath(board, a, b) {
+export const findPath = (board, a, b) => search(board, a, b, 2)?.path ?? null;
+
+// 이을 수 없을 때 이유를 보여 주려고: 꺾는 횟수 제한 없이 가장 적게 꺾는 길 { path, turns }. 아예 닿지 않으면 null.
+export const fewestTurnsPath = (board, a, b) => search(board, a, b, Infinity);
+
+function search(board, a, b, maxTurns) {
   const { cols, rows, cells } = board;
   if (a === b || cells[a] < 0 || cells[a] !== cells[b]) return null;
   const R = rows + 2;
@@ -31,13 +36,13 @@ export function findPath(board, a, b) {
     const c = cur.c + dc;
     if (!free(r, c)) continue;
     const node = { r, c, d: cur.d, turns: cur.turns, prev: cur };
-    if (r === goal[0] && c === goal[1]) return trace(node);
+    if (r === goal[0] && c === goal[1]) return { path: trace(node), turns: cur.turns };
     const key = `${r},${c},${cur.d}`;
     if ((best.get(key) ?? Infinity) <= cur.turns) continue;
     best.set(key, cur.turns);
     for (let nd = 0; nd < 4; nd++) {
       const t = cur.turns + (nd === cur.d ? 0 : 1);
-      if (t <= 2) queue.push({ ...node, d: nd, turns: t });
+      if (t <= maxTurns) queue.push({ ...node, d: nd, turns: t });
     }
   }
   return null;

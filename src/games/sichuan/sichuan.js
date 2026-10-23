@@ -4,10 +4,10 @@ import { play } from '../../core/sound.js';
 import { mountShell } from '../../core/shell.js';
 import { shuffleInPlace } from '../../core/random.js';
 import { createClock, formatTime, formatMinutes } from '../../core/clock.js';
-import { addWin, clearSave, getProgress, getSave, putProgress, putSave } from '../../core/records.js';
+import { addWin, bumpTip, clearSave, getProgress, getSave, putProgress, putSave, tipCount } from '../../core/records.js';
 import { winProgressHtml } from '../../core/progress-view.js';
 import { MORE_PICTURES, PICTURES, pictureSrc } from '../pictures.js';
-import { deal, findHint, findPath, settle, shuffle, stageSpec } from './rules.js';
+import { deal, fewestTurnsPath, findHint, findPath, settle, shuffle, stageSpec } from './rules.js';
 
 const GAME = 'sichuan';
 const TILE_RATIO = 1.2;   // 패 높이 / 너비
@@ -22,6 +22,9 @@ const HINT_MS = 2200;
 const ALL_PICTURES = [...PICTURES, ...MORE_PICTURES];
 const pictureName = (id) => ALL_PICTURES.find((p) => p.id === id).name;
 const GRAVITY_WORD = { down: '아래로', up: '위로', left: '왼쪽으로', right: '오른쪽으로' };
+const GRAVITY_ICON = { down: 'ph-arrow-down', up: 'ph-arrow-up', left: 'ph-arrow-left', right: 'ph-arrow-right' };
+const BLOCKED_TIPS = 3;   // 안 이어지는 이유는 처음 몇 번만 알려 준다
+const BLOCKED_MS = 3200;  // 이유(빨간 점선 길과 한 줄)를 보여 주는 시간
 
 const left = (board) => board.cells.filter((v) => v >= 0).length;
 // 단계가 들어 있는 판만 이어 한다(단계 방식 전의 저장본은 버린다)
@@ -38,6 +41,66 @@ export const entry = {
 function tileWidth(cols, rows, w, h) {
   return Math.min((w - (cols - 1) * GAP) / (cols + 2 * PAD), (h - (rows - 1) * GAP) / (rows * TILE_RATIO + 2 * PAD));
 }
+
+// 판 좌표 [행, 열]의 패 한가운데. 테두리(-1, rows/cols)는 둘레 여백의 가운데로.
+function centerOf([r, c], { cols, rows, tw }) {
+  const th = tw * TILE_RATIO;
+  const pad = tw * PAD;
+  const axis = (n, max, size) => {
+    if (n < 0) return pad / 2;
+    if (n >= max) return pad + max * (size + GAP) - GAP + pad / 2;
+    return pad + n * (size + GAP) + size / 2;
+  };
+  return [axis(c, cols, tw), axis(r, rows, th)];
+}
+
+const pathSvg = (path, size, bad = false) => {
+  const pts = path.map((p) => centerOf(p, size).join(',')).join(' ');
+  return `<polyline class="path-glow" points="${pts}"/><polyline class="path-line${bad ? ' is-bad' : ''}" points="${pts}" pathLength="1"/>`;
+};
+
+// '방법' 카드 장면: 실제 패(.tile)와 이은 길로 그린 작은 판. cells는 그림 id(빈칸은 null).
+function miniBoard({ cols, rows, cells, path = null, bad = false, picked = [], finger = null }) {
+  const size = { cols, rows, tw: 46 };
+  const tiles = cells.map((id, i) => (id
+    ? `<span class="tile${picked.includes(i) ? ' is-picked' : ''}"><img src="${pictureSrc(id)}" alt="" draggable="false"></span>`
+    : '<span class="tile-slot"></span>')).join('');
+  const [fx, fy] = finger === null ? [0, 0] : centerOf([Math.floor(finger / cols), finger % cols], size);
+  return `<div class="sichuan sichuan--mini" style="--cols:${cols};--rows:${rows};--tw:46px;--th:${46 * TILE_RATIO}px;--gap:${GAP}px;--pad:${46 * PAD}px">
+    ${tiles}
+    <svg class="sichuan__path" aria-hidden="true">${path ? pathSvg(path, size, bad) : ''}</svg>
+    ${finger === null ? '' : `<i class="ph-fill ph-hand-pointing howto__finger" style="left:${fx}px;top:${fy}px"></i>`}
+  </div>`;
+}
+
+const toolChip = (icon, label) => `<span class="tool"><span class="tool__icon"><i class="ph ${icon}"></i></span><span class="tool__label">${label}</span></span>`;
+
+// '방법' 그림 카드(위 막대 '방법' 단추). 한 장에 한 가지, 큰 한 문장.
+const HOWTO = {
+  title: '사천성 하는 법',
+  cards: [
+    {
+      text: '같은 그림 두 장을 차례로 누르세요. 선으로 이어지면 두 장이 사라집니다.',
+      scene: miniBoard({ cols: 4, rows: 2, cells: ['apple', null, null, 'tulip', 'cat', 'puppy', 'apple', 'grapes'], path: [[0, 0], [0, 1], [0, 2], [1, 2]], picked: [0, 6], finger: 6 }),
+    },
+    {
+      text: '선은 두 번까지 꺾을 수 있어요. 판 바깥 둘레로 돌아가도 됩니다.',
+      scene: miniBoard({ cols: 4, rows: 2, cells: ['apple', 'cat', 'apple', 'tulip', 'grapes', 'puppy', 'bird', 'rabbit'], path: [[0, 0], [-1, 0], [-1, 2], [0, 2]], picked: [0, 2] }),
+    },
+    {
+      text: '세 번 이상 꺾어야만 닿으면 이을 수 없어요. 다른 짝을 찾아보세요.',
+      scene: miniBoard({ cols: 4, rows: 2, cells: ['apple', 'cat', 'tulip', 'grapes', 'puppy', null, null, 'apple'], path: [[0, 0], [0, -1], [2, -1], [2, 3], [1, 3]], bad: true, picked: [0, 7] }),
+    },
+    {
+      text: '막히면 힌트를 누르세요. 섞기는 남은 패를 다시 섞고, 되돌리기는 한 수 물립니다.',
+      scene: `<div class="howto__tools">${toolChip('ph-lightbulb', '힌트')}${toolChip('ph-shuffle', '섞기')}${toolChip('ph-arrow-counter-clockwise', '되돌리기')}</div>`,
+    },
+    {
+      text: '판을 깨면 다음 단계로 넘어갑니다. 19단계부터는 짝을 치우면 남은 패가 한쪽으로 쏠려요.',
+      scene: `<div class="howto__stage"><span class="gravity-chip"><i class="ph ph-arrow-down"></i>아래로 쏠림</span></div>`,
+    },
+  ],
+};
 
 // 이 단계에서 처음 달라지는 점(판이 커짐·그림이 늘어남·패가 쏠림)을 한 줄로. 같으면 null.
 function newRule(stage) {
@@ -62,6 +125,7 @@ function mount(root, { onHome }) {
     ],
     onAction: (a) => ({ undo, hint, shuffle: reshuffle, new: askNewGame })[a]?.(),
     onHome: () => { persist(); onHome(); },
+    howto: HOWTO,
   });
   const board = shell.board;
   board.setAttribute('aria-label', '사천성 판');
@@ -106,10 +170,15 @@ function mount(root, { onHome }) {
     board.innerHTML = `<div class="sichuan${dealing ? ' is-dealing' : ''}" style="--cols:${cols};--rows:${rows}">
       ${cells.map((v, i) => tileHtml(i, v, v >= 0 ? k++ : 0)).join('')}
       <svg class="sichuan__path" aria-hidden="true"></svg>
-    </div>`;
+    </div>${gravityChip()}`;
     picked = -1;
     fit();
     sync();
+  }
+
+  function gravityChip() {
+    const { gravity } = stageSpec(state.stage);
+    return gravity ? `<span class="gravity-chip"><i class="ph ${GRAVITY_ICON[gravity]}"></i>${GRAVITY_WORD[gravity]} 쏠림</span>` : '';
   }
 
   function sync() {
@@ -132,25 +201,57 @@ function mount(root, { onHome }) {
   const tileEl = (i) => board.querySelector(`[data-i="${i}"]`);
 
   // 판 좌표 [행, 열]의 패 한가운데. 테두리(-1, rows/cols)는 둘레 여백의 가운데로.
-  function center([r, c]) {
-    const { cols, rows } = state.board;
+  // bad: 이을 수 없는 길(빨간 점선)을 잠깐 보여 줄 때
+  function showPath(path, { bad = false } = {}) {
+    const svg = board.querySelector('.sichuan__path');
     const tw = parseFloat(board.querySelector('.sichuan').style.getPropertyValue('--tw'));
-    const th = tw * TILE_RATIO;
-    const pad = tw * PAD;
-    const axis = (n, max, size) => {
-      if (n < 0) return pad / 2;
-      if (n >= max) return pad + max * (size + GAP) - GAP + pad / 2;
-      return pad + n * (size + GAP) + size / 2;
-    };
-    return [axis(c, cols, tw), axis(r, rows, th)];
+    svg.innerHTML = pathSvg(path, { cols: state.board.cols, rows: state.board.rows, tw }, bad);
+    clearTimeout(pathTimer);
+    pathTimer = setTimeout(() => { svg.innerHTML = ''; }, bad ? BLOCKED_MS : PATH_MS + LEAVE_MS);
   }
 
-  function showPath(path) {
-    const svg = board.querySelector('.sichuan__path');
-    const pts = path.map((p) => center(p).join(',')).join(' ');
-    svg.innerHTML = `<polyline class="path-glow" points="${pts}"/><polyline class="path-line" points="${pts}" pathLength="1"/>`;
-    clearTimeout(pathTimer);
-    pathTimer = setTimeout(() => { svg.innerHTML = ''; }, PATH_MS + LEAVE_MS);
+  // 첫 판 손가락 안내(한 번만): 이을 수 있는 짝을 가리키고, 첫 짝을 치우면 힌트 단추를 알려 준다
+  let guide = false;
+  let coachTimer = 0;
+  function coachFor(ms, opts) {
+    clearTimeout(coachTimer);
+    shell.coach.show(opts);
+    if (ms) coachTimer = setTimeout(() => shell.coach.hide(), ms);
+  }
+  function partnerOf(i) {
+    const { cells } = state.board;
+    const j = cells.findIndex((v, k) => k !== i && v === cells[i] && findPath(state.board, i, k));
+    return j < 0 ? null : j;
+  }
+  function guideStart() {
+    if (tipCount('sichuan-coach') > 0) return;
+    const pair = findHint(state.board);
+    if (!pair) return;
+    bumpTip('sichuan-coach');
+    guide = true;
+    coachFor(0, { text: '같은 그림 두 장을 차례로 누르세요', at: () => tileEl(pair[0]) });
+  }
+  function guideAfterPick() {
+    if (!guide) return;
+    if (!shell.coach.active) { guide = false; return; }
+    if (picked < 0) return;
+    const j = partnerOf(picked);
+    coachFor(0, j === null
+      ? { text: '이 그림은 지금 이을 짝이 없어요. 다른 그림을 눌러 보세요' }
+      : { text: '이어지는 같은 그림을 하나 더 누르세요', at: () => tileEl(j) });
+  }
+  function guideAfterMatch() {
+    if (!guide) return;
+    guide = false;
+    if (!shell.coach.active) return;
+    coachFor(6500, { text: '잘하셨어요! 선은 두 번까지 꺾을 수 있어요. 막히면 힌트를 누르세요', at: () => document.querySelector('[data-act="hint"]') });
+  }
+
+  // 패가 쏠리는 방향을 처음 만나면 알려 주고, 쏠림 단계 내내 판 귀퉁이에 방향을 띄운다
+  function gravityStart(gravity) {
+    if (!gravity || tipCount(`sichuan-gravity-${gravity}`) > 0) return;
+    bumpTip(`sichuan-gravity-${gravity}`);
+    coachFor(6000, { text: `이번 단계부터 짝을 치우면 남은 패가 ${GRAVITY_WORD[gravity]} 쏠립니다`, at: () => board.querySelector('.gravity-chip') });
   }
 
   function select(i) {
@@ -170,22 +271,36 @@ function mount(root, { onHome }) {
     const i = Number(btn.dataset.i);
     if (!clock.running()) clock.start();
     if (picked === i) { select(-1); return play('place'); }
-    if (picked < 0 || state.board.cells[picked] !== state.board.cells[i]) { select(i); return play('place'); }
+    if (picked < 0 || state.board.cells[picked] !== state.board.cells[i]) {
+      select(i);
+      guideAfterPick();
+      return play('place');
+    }
 
     const a = picked;
     const path = findPath(state.board, a, i);
     if (!path) {
-      // 같은 그림인데 이을 길이 없으면 두 장을 흔들어 알려 준다
+      // 같은 그림인데 이을 길이 없으면 두 장을 흔들어 알려 주고, 처음 몇 번은 이유도 보여 준다
       [a, i].forEach((k) => {
         const el = tileEl(k);
         el.classList.remove('is-shaking');
         void el.offsetWidth;
         el.classList.add('is-shaking');
       });
+      explainBlocked(a, i);
       select(-1);
+      guideAfterPick();
       return play('miss');
     }
     match(a, i, path);
+  }
+
+  function explainBlocked(a, b) {
+    if (tipCount('sichuan-blocked') >= BLOCKED_TIPS) return;
+    bumpTip('sichuan-blocked');
+    const why = fewestTurnsPath(state.board, a, b);
+    if (why) showPath(why.path, { bad: true });
+    shell.toast(why ? `${why.turns}번 꺾여야 해서 이을 수 없어요. 두 번까지만 됩니다` : '다른 패가 길을 막고 있어서 이을 수 없어요', BLOCKED_MS);
   }
 
   function match(a, b, path) {
@@ -198,6 +313,8 @@ function mount(root, { onHome }) {
     select(-1);
     clearHint();
     play('match');
+    guideAfterMatch();
+    if (shell.coach.active && !guide && stageSpec(state.stage).gravity) shell.coach.hide();
     // 바로 옆에 붙은 짝은 길을 그리지 않고 서로 다가가 사라진다(길이 그림을 가로지르기만 해서)
     const near = path.length === 2;
     const doneMs = near ? MEET_MS : PATH_MS + LEAVE_MS;
@@ -332,8 +449,9 @@ function mount(root, { onHome }) {
     clock.reset(0);
     clearSave(GAME);
     draw({ dealing: true });
-    const { gravity } = stageSpec(stage);
-    if (gravity) shell.toast(`이번 판은 짝을 치우면 남은 패가 ${GRAVITY_WORD[gravity]} 쏠립니다`);
+    shell.coach.hide();
+    guideStart();
+    gravityStart(stageSpec(stage).gravity);
     tick();
   }
 

@@ -3,9 +3,14 @@
 .game-screen {
   position: fixed; inset: 0;
   display: grid; grid-template-rows: auto 1fr; grid-template-columns: minmax(0, 1fr);
-  background: var(--green-deep);
+  /* 배경은 그 게임의 장면 사진(--scene, main.js). 첫 화면에서 마우스를 올렸을 때와 같은 그림 */
+  background: var(--green-deep) var(--scene, none) center / cover no-repeat;
 }
 .game-top {
+  /* 사진 위에서도 흰 글자가 읽히도록 어두운 반투명 유리(밝은 장면에서도 같은 막대) */
+  position: relative; z-index: 2;
+  background: var(--bar-glass); backdrop-filter: blur(16px) saturate(140%); -webkit-backdrop-filter: blur(16px) saturate(140%);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.08), 0 6px 18px rgb(0 0 0 / 0.18);
   display: grid; grid-template-columns: auto 1fr auto; grid-template-areas: "back status actions";
   align-items: center; gap: 16px;
   /* 넓은 화면에서도 단추가 구석으로 가지 않게, 판의 카드 폭(약 1200px) 안으로 모은다 */
@@ -17,6 +22,8 @@
   font-weight: 600; font-size: 1.05rem;
 }
 .back-link .ph { font-size: 1.4rem; }
+.back-link { transition: background-color 200ms ease-out; }
+.back-link .ph { transition: transform 260ms var(--ease-out); }
 .back-link:active { background: rgb(255 255 255 / 0.1); }
 .status { grid-area: status; display: flex; justify-content: center; gap: clamp(14px, 3vw, 32px); font-variant-numeric: tabular-nums; }
 .status__item { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; }
@@ -28,15 +35,21 @@
   display: flex; align-items: center; gap: 8px;
   min-height: 52px; padding: 0 18px; border: 0; border-radius: 999px;
   background: rgb(255 255 255 / 0.14);
-  transition: background 90ms, transform 80ms ease-out;
+  transition: transform 260ms var(--ease-out), box-shadow 260ms var(--ease-out), background-color 200ms ease-out;
 }
-.tool__icon { font-size: 1.5rem; display: grid; }
+.tool__icon { font-size: 1.5rem; display: grid; transition: transform 260ms var(--ease-out); }
 .tool__label { font-size: 1.05rem; font-weight: 700; white-space: nowrap; }
-.tool:hover { background: rgb(255 255 255 / 0.22); }
-.tool:active { background: rgb(255 255 255 / 0.3); transform: scale(0.97); }
+/* 들림(A안): 올리면 떠오르고 아이콘이 살짝 커진다. 누르면 바로 내려앉는다 */
+@media (hover: hover) and (pointer: fine) {
+  .tool:not(:disabled):hover { transform: translateY(-3px); background: rgb(255 255 255 / 0.24); box-shadow: var(--shadow-hover-dark); }
+  .tool:not(:disabled):hover .tool__icon { transform: translateY(-1px) scale(1.1); }
+  .back-link:hover { background: rgb(255 255 255 / 0.12); }
+  .back-link:hover .ph { transform: translateX(-3px); }
+}
+.tool:active { background: rgb(255 255 255 / 0.3); transform: scale(0.95); transition-duration: 90ms; transition-timing-function: var(--ease-press); }
 .tool[aria-pressed="true"]:not([data-act="sound"]) { background: var(--paper); color: var(--ink); }
 
-.game-board { position: relative; overflow: hidden; background: var(--green-felt); touch-action: none; user-select: none; }
+.game-board { position: relative; overflow: hidden; touch-action: none; user-select: none; }   /* 판은 투명: 장면 사진이 그대로 보인다 */
 
 /* 위 막대가 한 줄에 다 안 들어가면(shell.js가 재서 .is-stacked를 붙인다) 두 줄로:
    첫 줄에 처음으로와 기록, 둘째 줄에 도구 버튼을 같은 폭으로 */
@@ -73,3 +86,4 @@
   transition: opacity 180ms ease-out, transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-reduced-transparency: reduce) { .game-top { background: var(--green-deep); backdrop-filter: none; -webkit-backdrop-filter: none; } }

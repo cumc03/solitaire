@@ -54,12 +54,46 @@ function render() {
   }).join('');
   return `
     <section class="home">
+      <div class="home__scenes" aria-hidden="true"></div>
       <div class="home__col">
         ${resumeCard()}
         ${monthCupCard()}
         <nav class="game-list" aria-label="게임">${rows}</nav>
       </div>
     </section>`;
+}
+
+// 들림(A안)의 기울기: 마우스 위치를 따라 아이콘이 기운다. 마우스가 있는 기기에서만.
+const LIFTS = '.game-list__row, .resume, .month-cup';
+
+function tilt(row, e) {
+  const r = row.getBoundingClientRect();
+  row.style.setProperty('--rx', `${(((e.clientX - r.left) / r.width - 0.5) * 16).toFixed(2)}deg`);
+  row.style.setProperty('--ry', `${(-((e.clientY - r.top) / r.height - 0.5) * 16).toFixed(2)}deg`);
+}
+
+// 게임별 배경: 처음 마우스를 올릴 때 장면 그림을 깔아 두고, 올린 게임의 장면만 드러낸다
+function showScene(root, id) {
+  const box = root.querySelector('.home__scenes');
+  if (!box) return;
+  if (!box.childElementCount) {
+    box.innerHTML = GAMES.map((g) => `<div class="home__scene" data-scene="${g.id}" style="background-image:url('${g.scene}')"></div>`).join('');
+  }
+  box.querySelectorAll('.home__scene').forEach((el) => el.classList.toggle('is-on', el.dataset.scene === id));
+}
+
+function onPointer(e) {
+  if (e.pointerType !== 'mouse') return;
+  const row = e.target.closest?.(LIFTS);
+  if (row) tilt(row, e);
+  const game = e.target.closest?.('.game-list__row');
+  if (game && e.type === 'pointerover') showScene(e.currentTarget, game.dataset.go);
+}
+
+function onLeave(e) {
+  if (e.pointerType !== 'mouse') return;
+  const from = e.target.closest?.('.game-list');
+  if (from && !from.contains(e.relatedTarget)) showScene(e.currentTarget, null);
 }
 
 export function mountHome(root, { onOpen }) {
@@ -81,9 +115,15 @@ export function mountHome(root, { onOpen }) {
     onOpen(go.dataset.go);
   };
   root.addEventListener('click', onClick);
+  root.addEventListener('pointermove', onPointer);
+  root.addEventListener('pointerover', onPointer);
+  root.addEventListener('pointerout', onLeave);
   return {
     destroy() {
       root.removeEventListener('click', onClick);
+      root.removeEventListener('pointermove', onPointer);
+      root.removeEventListener('pointerover', onPointer);
+      root.removeEventListener('pointerout', onLeave);
       root.innerHTML = '';
     },
   };

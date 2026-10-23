@@ -38,6 +38,10 @@ export function putSave(game, data) {
 
 export const clearSave = (game) => remove(`save:${game}`);
 
+// 안내를 몇 번 보였는지(첫 판 손가락 안내, '처음 몇 번만' 알려 주는 한 줄 등)
+export const tipCount = (key) => load(`tip:${key}`, 0);
+export const bumpTip = (key) => save(`tip:${key}`, tipCount(key) + 1);
+
 // 게임별 진행(예: 사천성 지금 단계와 가장 높이 간 단계). 판을 지워도 남는다.
 export const getProgress = (game, empty) => load(`progress:${game}`, empty);
 export const putProgress = (game, value) => save(`progress:${game}`, value);

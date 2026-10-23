@@ -3,7 +3,7 @@ import { makePuzzle, peers, SIZES } from './generator.js';
 import { play } from '../../core/sound.js';
 import { mountShell } from '../../core/shell.js';
 import { createClock, formatTime, formatMinutes } from '../../core/clock.js';
-import { addWin, clearSave, getSave, putSave } from '../../core/records.js';
+import { addWin, bumpTip, clearSave, getSave, putSave, tipCount } from '../../core/records.js';
 import { winProgressHtml } from '../../core/progress-view.js';
 
 const GAME = 'sudoku';
@@ -16,6 +16,66 @@ export const entry = {
     const n = [9, 6, 4].find((k) => rec.best[`time${k}`] !== undefined);
     return `이긴 판 ${rec.wins}${n ? `, ${sizeLabel(n)} 최고 ${formatTime(rec.best[`time${n}`])}` : ''}`;
   },
+};
+
+// '방법' 카드 장면: 실제 칸 모양(.cell)으로 그린 작은 4×4 판
+const MINI_SOLUTION = [1, 2, 3, 4, 3, 4, 1, 2, 2, 1, 4, 3, 4, 3, 2, 1];
+const MINI_CELL = 44;
+function miniSudoku({ shown, selected = null, peerHi = false, conflict = null, notes = null, keys = false, finger = null, chips = '' }) {
+  const peer = selected === null ? [] : peers(4)[selected];
+  const cells = MINI_SOLUTION.map((v, i) => {
+    const r = Math.floor(i / 4);
+    const c = i % 4;
+    const cls = [
+      'cell',
+      shown.includes(i) ? 'is-given' : '',
+      c === 1 ? 'b-right' : '',
+      r === 1 ? 'b-bottom' : '',
+      i === selected ? 'is-selected' : '',
+      peerHi && peer.includes(i) ? 'is-peer' : '',
+      conflict && conflict.at === i ? 'is-conflict' : '',
+    ].filter(Boolean).join(' ');
+    let content = shown.includes(i) ? v : '';
+    if (conflict && conflict.at === i) content = conflict.value;
+    if (notes && notes.at === i) content = `<span class="notes">${[1, 2, 3, 4].map((k) => `<span>${notes.values.includes(k) ? k : ''}</span>`).join('')}</span>`;
+    return `<span class="${cls}">${content}</span>`;
+  }).join('');
+  const keyRow = keys ? `<div class="sudoku-mini__keys">${[1, 2, 3, 4].map((k) => `<span class="key">${k}</span>`).join('')}</div>` : '';
+  let fingerHtml = '';
+  if (finger) {
+    const [x, y] = finger.key
+      ? [(finger.key - 1) * MINI_CELL + MINI_CELL / 2, 4 * MINI_CELL + 12 + MINI_CELL / 2]
+      : [(finger.cell % 4) * MINI_CELL + MINI_CELL / 2, Math.floor(finger.cell / 4) * MINI_CELL + MINI_CELL / 2];
+    fingerHtml = `<i class="ph-fill ph-hand-pointing howto__finger" style="left:${x}px;top:${y}px"></i>`;
+  }
+  return `<div class="sudoku-mini"><div class="sudoku__grid" style="--n:4;--bh:2;--bw:2;--board:${MINI_CELL * 4}px">${cells}</div>${keyRow}${chips}${fingerHtml}</div>`;
+}
+const toolChip = (icon, label) => `<span class="tool"><span class="tool__icon"><i class="ph ${icon}"></i></span><span class="tool__label">${label}</span></span>`;
+
+const HOWTO = {
+  title: '스도쿠 하는 법',
+  cards: [
+    {
+      text: '빈칸을 누르고, 아래에서 숫자를 누르면 그 칸에 들어갑니다.',
+      scene: miniSudoku({ shown: [0, 2, 3, 4, 5, 7, 9, 10, 12, 15], selected: 1, keys: true, finger: { key: 2 } }),
+    },
+    {
+      text: '한 줄, 한 세로줄, 굵은 선으로 묶인 상자 안에는 같은 숫자가 한 번씩만 들어가요.',
+      scene: miniSudoku({ shown: [0, 2, 3, 4, 5, 7, 9, 10, 12, 15], selected: 6, peerHi: true }),
+    },
+    {
+      text: '규칙에 어긋나면 숫자가 빨갛게 보여요. 다른 숫자로 바꾸면 됩니다.',
+      scene: miniSudoku({ shown: [0, 2, 3, 4, 5, 7, 9, 10, 12, 15], conflict: { at: 1, value: 3 } }),
+    },
+    {
+      text: '연필 메모를 켜면 칸에 작은 숫자로 후보를 적어 둘 수 있어요.',
+      scene: miniSudoku({ shown: [0, 2, 3, 4, 5, 7, 9, 10, 12, 15], notes: { at: 6, values: [1, 4] }, chips: `<div class="howto__tools">${toolChip('ph-pencil-simple', '연필 메모')}</div>` }),
+    },
+    {
+      text: '빈칸을 모두 채우면 끝입니다. 막히면 힌트를 누르세요.',
+      scene: miniSudoku({ shown: MINI_SOLUTION.map((_, i) => i), chips: `<div class="howto__tools">${toolChip('ph-lightbulb', '힌트')}</div>` }),
+    },
+  ],
 };
 
 function newState(n) {
@@ -35,6 +95,7 @@ function mount(root, { onHome }) {
     ],
     onAction: (a) => ({ undo: doUndo, hint: doHint, memo: toggleMemo, new: askNewGame })[a]?.(),
     onHome: () => { persist(); onHome(); },
+    howto: HOWTO,
   });
   const board = shell.board;
   board.setAttribute('aria-label', '스도쿠 판');
@@ -141,6 +202,7 @@ function mount(root, { onHome }) {
       play(conflicts(i) ? 'miss' : 'place');
     }
     refresh();
+    guideAfterValue(i);
     if (solved()) return win();
     persist();
   }
@@ -229,7 +291,45 @@ function mount(root, { onHome }) {
     draw();
     tick();
     persist();
+    guideStart();
   }
+
+  // 첫 판 손가락 안내(한 번만): 빈칸 하나 → 들어갈 숫자 → 연필 메모 순으로 가리킨다
+  let guide = false;
+  let coachTimer = 0;
+  const cellEl = (i) => board.querySelector(`.cell[data-i="${i}"]`);
+  const keyEl = (v) => board.querySelector(`.key[data-key="${v}"]`);
+  function coachFor(ms, opts) {
+    clearTimeout(coachTimer);
+    shell.coach.show(opts);
+    if (ms) coachTimer = setTimeout(() => shell.coach.hide(), ms);
+  }
+  function guideStart() {
+    if (tipCount('sudoku-coach') > 0) return;
+    // 이미 찬 이웃이 가장 많은 빈칸(들어갈 숫자를 찾기 가장 쉬운 칸)
+    const empties = state.solution.map((_, i) => i).filter((i) => !value(i));
+    const easiest = empties.reduce((best, i) => {
+      const filled = peers(state.n)[i].filter((p) => value(p)).length;
+      return filled > best.filled ? { i, filled } : best;
+    }, { i: empties[0], filled: -1 }).i;
+    bumpTip('sudoku-coach');
+    guide = true;
+    coachFor(0, { text: '빈칸을 하나 누르세요', at: () => cellEl(easiest) });
+  }
+  function guideAfterSelect() {
+    if (!guide) return;
+    if (!shell.coach.active) { guide = false; return; }
+    if (isGiven(selected)) return coachFor(0, { text: '처음부터 있던 숫자는 바꿀 수 없어요. 빈칸을 눌러 보세요' });
+    coachFor(0, { text: '이 칸에 들어갈 숫자를 누르세요. 한 줄·한 세로줄·굵은 상자에 같은 숫자는 한 번씩만 들어가요', at: () => keyEl(state.solution[selected]), by: () => board.querySelector('.sudoku__keys') });
+  }
+  function guideAfterValue(i) {
+    if (!guide || memo || !state.entries[i]) return;
+    if (!shell.coach.active) { guide = false; return; }
+    if (conflicts(i)) return coachFor(0, { text: '빨간 숫자는 같은 줄이나 상자에 이미 있다는 뜻이에요. 다른 숫자를 눌러 보세요', at: () => keyEl(state.solution[i]), by: () => board.querySelector('.sudoku__keys') });
+    guide = false;
+    coachFor(6500, { text: '잘하셨어요! 헷갈리면 연필 메모로 후보를 적어 두세요', at: () => screenTool('memo') });
+  }
+  const screenTool = (id) => document.querySelector(`[data-act="${id}"]`);
 
   function tick() {
     shell.set('time', formatTime(clock.elapsed()));
@@ -240,7 +340,8 @@ function mount(root, { onHome }) {
     if (cell) {
       selected = Number(cell.dataset.i);
       play('tick');
-      return refresh();
+      refresh();
+      return guideAfterSelect();
     }
     const key = e.target.closest('.key');
     if (key) setValue(Number(key.dataset.key));
@@ -278,6 +379,7 @@ function mount(root, { onHome }) {
       persist();
       ro.disconnect();
       clearInterval(timer);
+      clearTimeout(coachTimer);
       clock.dispose();
       document.removeEventListener('keydown', onKey);
       window.removeEventListener('pagehide', persist);

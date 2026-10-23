@@ -1,0 +1,77 @@
+/* 안내 문장: 한 문장에 한 줄씩, 긴 문장은 고르게 나뉜다(src/core/lines.js) */
+:is(.coach__text, .howto__text) .line { display: block; text-wrap: balance; }
+
+/* 안내: 첫 판 손가락 안내(src/core/coach.js)와 '방법' 그림 카드(src/core/howto.js).
+   화면을 막지 않고, 판 위쪽 같은 자리에서 큰 글자 한 줄로 알려 준다. */
+.coach {
+  position: fixed; left: 0; top: 0; z-index: 3000;   /* 자리는 coach.js가 가리키는 곳 옆으로 잡는다 */
+  width: max-content; max-width: min(520px, calc(100vw - 24px));
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 12px 12px 20px; border-radius: var(--radius-group);
+  background: var(--paper); color: var(--ink);
+  box-shadow: var(--shadow-dialog);
+}
+.coach.is-in { animation: coach-in 360ms var(--ease-out) both; }
+.coach[hidden] { display: none; }
+.coach__text { font-size: 1.2rem; font-weight: 700; line-height: 1.4; letter-spacing: -0.01em; }
+.coach__skip {
+  flex: none; min-height: 48px; padding: 0 16px; border: 0; border-radius: 999px;
+  background: var(--paper-muted); color: var(--ink-soft); font-size: 1rem; font-weight: 700;
+  transition: background-color 200ms ease-out;
+}
+@media (hover: hover) and (pointer: fine) { .coach__skip:hover { background: var(--select-strong); color: var(--ink); } }
+@keyframes coach-in { from { opacity: 0; transform: translateY(8px) scale(0.98); } }
+
+/* 손가락: 끝이 칸 한가운데를 누르듯 천천히 두드린다. 밝은 판·초록 판 어디서나 보이게 흰 손 + 짙은 테두리 그림자 */
+.coach-finger { position: fixed; left: 0; top: 0; z-index: 3001; pointer-events: none; }
+.coach-finger[hidden] { display: none; }
+.coach-finger i, .howto__finger {
+  display: block; font-size: 58px; color: var(--paper);
+  margin: -6px 0 0 -22px;   /* 손가락 끝이 가리킬 점에 오도록 */
+  filter: drop-shadow(0 0 1.5px rgb(0 0 0 / 0.75)) drop-shadow(0 8px 12px rgb(0 0 0 / 0.35));
+  animation: finger-tap 1.3s var(--ease-out) infinite;
+  transform-origin: 40% 10%;
+}
+@keyframes finger-tap {
+  0%, 100% { transform: translate(6px, 14px); }
+  45% { transform: translate(0, 0); }
+  55% { transform: translate(0, 0) scale(0.92); }
+}
+
+/* '방법' 그림 카드 */
+.howto { display: grid; gap: 16px; animation: howto-in 280ms var(--ease-out) both; }
+.howto__scene {
+  position: relative; min-height: 200px; display: grid; place-items: center;
+  border-radius: var(--radius-button); overflow: hidden;
+  background: var(--green-felt) var(--scene, none) center / cover;   /* 그 게임 장면의 빈 가운데 */
+}
+.howto__text { font-size: 1.3rem; font-weight: 700; line-height: 1.5; color: var(--ink); letter-spacing: -0.01em; }
+.howto__dots { display: flex; justify-content: center; gap: 8px; }
+.howto__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); box-shadow: inset 0 0 0 1px rgb(17 22 20 / 0.12); }
+.howto__dot.is-on { width: 22px; border-radius: 999px; background: var(--green-action); box-shadow: none; }
+.howto__finger { position: absolute; }
+.howto__tools { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; padding: 16px; }
+.howto__tools .tool { pointer-events: none; }
+@keyframes howto-in { from { opacity: 0; transform: translateX(14px); } }
+
+/* 카드 속 작은 장면들(각 게임의 실제 부품 모양을 그대로 쓴다) */
+.howto__arrow { position: absolute; font-size: 44px; color: var(--hint); filter: drop-shadow(0 2px 4px rgb(0 0 0 / 0.4)); }
+.solitaire-mini { position: relative; width: 300px; height: 150px; --cw: 62px; --ch: 87px; --card-radius: 6px; }
+.solitaire-mini .card { position: absolute; left: 0; top: 0; width: var(--cw); height: var(--ch); }
+.memory-mini { position: relative; display: grid; grid-template-columns: repeat(4, 64px); gap: 10px; --cw: 64px; }
+.memory-mini .mcard { height: 64px; }
+.sudoku-mini { position: relative; display: grid; gap: 12px; justify-items: start; padding: 12px 0; }
+.sudoku-mini .sudoku__grid { border-width: 3px; }
+.sudoku-mini .notes { font-size: 13px; font-weight: 700; color: var(--sudoku-entry); }
+.sudoku-mini__keys { display: grid; grid-template-columns: repeat(4, 44px); }
+.sudoku-mini__keys .key { margin: 0 3px; min-height: 44px; display: grid; place-items: center; font-size: 1.2rem; }
+.sudoku-mini .howto__tools { padding: 0; justify-self: center; }
+.howto__scene .sudoku-mini, .howto__scene .memory-mini, .howto__scene .solitaire-mini { pointer-events: none; }
+
+@media (max-height: 520px) {
+  .howto__scene { min-height: 150px; }
+  .howto__text { font-size: 1.1rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .coach-finger i, .howto__finger { animation: none; }
+}

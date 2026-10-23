@@ -1,5 +1,7 @@
 /* 스도쿠: 흰 판과 숫자 단추 (src/games/sudoku/sudoku.js). 판 크기 --board는 화면 맞춤 계산이 넣는다. */
-.game-screen--sudoku .game-board { display: grid; place-items: center; touch-action: manipulation; user-select: none; background: var(--board-light); }
+.game-screen--sudoku .game-board {
+  display: grid; place-items: center; touch-action: manipulation; user-select: none;
+}
 .sudoku { display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 12px; }
 .sudoku.is-wide { flex-direction: row; gap: 28px; }
 

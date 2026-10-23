@@ -4,7 +4,7 @@ import { Spring2D } from '../../core/spring.js';
 import { play } from '../../core/sound.js';
 import { mountShell } from '../../core/shell.js';
 import { createClock, formatTime, formatMinutes } from '../../core/clock.js';
-import { addWin, clearSave, getSave, putSave } from '../../core/records.js';
+import { addWin, bumpTip, clearSave, getSave, putSave, tipCount } from '../../core/records.js';
 import { winProgressHtml } from '../../core/progress-view.js';
 
 const GAME = 'solitaire';
@@ -30,6 +30,36 @@ function cardMarkup(c) {
       <div class="card__face card__back"></div>
     </div>`;
 }
+
+// '방법' 카드 장면: 실제 카드 모양(cardMarkup)으로 그린 작은 테이블
+const miniCard = (c, x, y, extra = '') => `<div class="card is-up${extra}" style="transform:translate(${x}px,${y}px)">${cardMarkup(c)}</div>`;
+const miniBack = (x, y) => `<div class="card" style="transform:translate(${x}px,${y}px)">${cardMarkup({ suit: 0, rank: 1 })}</div>`;
+const miniTable = (inner, x = null, y = null) => `<div class="solitaire-mini">${inner}${x === null ? '' : `<i class="ph-fill ph-hand-pointing howto__finger" style="left:${x}px;top:${y}px"></i>`}</div>`;
+const toolChip = (icon, label) => `<span class="tool"><span class="tool__icon"><i class="ph ${icon}"></i></span><span class="tool__label">${label}</span></span>`;
+const BLACK7 = { suit: 0, rank: 7 };
+const RED6 = { suit: 1, rank: 6 };
+
+const HOWTO = {
+  title: '솔리테어 하는 법',
+  cards: [
+    {
+      text: '카드를 누르면 갈 수 있는 곳으로 저절로 옮겨 갑니다.',
+      scene: miniTable(`${miniCard(BLACK7, 40, 22)}${miniCard(RED6, 176, 30)}<i class="ph ph-arrow-bend-up-left howto__arrow" style="left:118px;top:20px"></i>`, 214, 92),
+    },
+    {
+      text: '원하는 곳이 따로 있으면 카드를 끌어서 놓아도 됩니다.',
+      scene: miniTable(`${miniCard(BLACK7, 70, 16)}${miniCard(RED6, 96, 46, ' is-lifted')}`, 132, 110),
+    },
+    {
+      text: '왼쪽 위 더미를 누르면 새 카드가 나옵니다. 한 장씩 또는 세 장씩 넘길 수 있어요.',
+      scene: miniTable(`${miniBack(56, 26)}${miniCard({ suit: 2, rank: 12 }, 150, 26)}`, 92, 92),
+    },
+    {
+      text: '막히면 힌트를 누르세요. 되돌리기는 한 수 물립니다.',
+      scene: `<div class="howto__tools">${toolChip('ph-lightbulb', '힌트')}${toolChip('ph-arrow-counter-clockwise', '되돌리기')}</div>`,
+    },
+  ],
+};
 
 // 판 크기에 맞춘 자리 계산. 휴대폰 가로처럼 낮은 화면은 남은 카드 더미를 왼쪽, 윗줄 4칸을 오른쪽 기둥으로.
 function computeLayout(W, H) {
@@ -126,6 +156,7 @@ function mount(root, { onHome }) {
     ],
     onAction: (a) => ({ undo: doUndo, hint: showHint, new: askNewGame })[a]?.(),
     onHome: () => { persist(); onHome(); },
+    howto: HOWTO,
   });
 
   const board = shell.board;
@@ -315,6 +346,42 @@ function mount(root, { onHome }) {
     shell.setDisabled('undo', true);
     tick();
     persist();
+    setTimeout(guideStart, 1400);   // 카드가 다 깔린 뒤
+  }
+
+  // 첫 판 손가락 안내(한 번만): 옮길 카드 → 더미 넘기기 → 힌트 단추 순으로 가리킨다
+  let guide = null;   // 'move' | 'draw'
+  let coachTimer = 0;
+  const stockEl = () => (state.stock.length ? cards.get(state.stock[state.stock.length - 1].id).el : board.querySelector('[data-slot="stock"]'));
+  function coachFor(ms, opts) {
+    clearTimeout(coachTimer);
+    shell.coach.show(opts);
+    if (ms) coachTimer = setTimeout(() => shell.coach.hide(), ms);
+  }
+  function guideStart() {
+    if (tipCount('solitaire-coach') > 0 || !state) return;
+    const h = K.findHint(state);
+    bumpTip('solitaire-coach');
+    if (h && !h.stock) {
+      const top = K.pickable(state, h.from)[0];
+      guide = 'move';
+      coachFor(0, { text: '카드를 누르면 갈 수 있는 곳으로 저절로 옮겨 갑니다', at: () => cards.get(top.id)?.el });
+    } else {
+      guide = 'draw';
+      coachFor(0, { text: '왼쪽 위 더미를 누르면 새 카드가 나옵니다', at: stockEl });
+    }
+  }
+  function guideNote(kind) {
+    if (!guide) return;
+    if (!shell.coach.active) { guide = null; return; }
+    if (guide === 'move' && kind === 'move') {
+      guide = 'draw';
+      return coachFor(0, { text: '잘하셨어요! 이번엔 왼쪽 위 더미를 눌러 새 카드를 꺼내 보세요', at: stockEl });
+    }
+    if (guide === 'draw' && kind === 'draw') {
+      guide = null;
+      coachFor(6500, { text: '끌어서 옮겨도 됩니다. 막히면 힌트를 누르세요', at: () => document.querySelector('[data-act="hint"]') });
+    }
   }
 
   // 누르기·끌기 (apple-design: 누르는 순간 반응, 손가락 1:1, 놓을 때 속도 이어받기)
@@ -403,6 +470,7 @@ function mount(root, { onHome }) {
       play('place');
       render({ spring: { damping: 0.86, response: 0.3, vx: v.vx, vy: v.vy }, flying });
       persist();
+      guideNote('move');
       afterMove();
     } else {
       render({ spring: { damping: 0.8, response: 0.32, vx: v.vx, vy: v.vy }, flying });
@@ -413,6 +481,7 @@ function mount(root, { onHome }) {
     const to = K.autoTarget(state, loc);
     if (to && K.move(state, loc, to)) {
       play('place');
+      guideNote('move');
       changed();
     } else {
       // 갈 곳이 없으면 고개를 젓듯 살짝 흔든다
@@ -427,6 +496,7 @@ function mount(root, { onHome }) {
   function doDraw() {
     if (K.draw(state)) {
       play('flip');
+      guideNote('draw');
       changed();
     }
   }

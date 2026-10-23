@@ -11,6 +11,8 @@ function show() {
   current?.destroy();
   const game = findGame(location.hash.replace(/^#\/?/, ''));
   document.documentElement.dataset.screen = game ? game.id : 'home';
+  // 게임 화면 배경 = 첫 화면에서 그 게임에 마우스를 올렸을 때의 장면(registry.js의 scene)
+  document.documentElement.style.setProperty('--scene', game ? `url("${new URL(game.scene, location.href).href}")` : 'none');
   current = game
     ? game.mount(app, { onHome: () => go(null) })
     : mountHome(app, { onOpen: go });

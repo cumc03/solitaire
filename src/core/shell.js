@@ -2,8 +2,11 @@
 // 세 게임이 같은 자리에 같은 단추를 갖도록(PRODUCT.md 원칙 4) 틀은 여기 한 곳에서만 만든다.
 import { isMuted, toggleMuted } from './sound.js';
 import { createSheet } from './sheet.js';
+import { createCoach } from './coach.js';
+import { showHowto } from './howto.js';
 
 const SOUND = { id: 'sound', icon: 'ph-speaker-high', label: '소리' };
+const HOWTO = { id: 'howto', icon: 'ph-question', label: '방법' };
 
 function toolButton(a) {
   const pressed = a.toggle ? ' aria-pressed="false"' : '';
@@ -12,13 +15,14 @@ function toolButton(a) {
   </button>`;
 }
 
-export function mountShell(root, { game, tally, actions, onAction, onHome }) {
+// howto: '방법' 그림 카드 { title, cards } — 주면 위 막대 소리 앞에 '방법' 단추가 생긴다
+export function mountShell(root, { game, tally, actions, onAction, onHome, howto = null }) {
   root.innerHTML = `
     <section class="game-screen game-screen--${game}">
       <header class="game-top">
         <button type="button" class="back-link" data-act="home"><i class="ph ph-caret-left"></i><span>처음으로</span></button>
         <div class="status">${tally.map((t) => `<span class="status__item"><small>${t.label}</small><b data-out="${t.id}"></b></span>`).join('')}</div>
-        <div class="toolbar" role="toolbar" aria-label="게임 단추">${[...actions, SOUND].map(toolButton).join('')}</div>
+        <div class="toolbar" role="toolbar" aria-label="게임 단추">${[...actions, ...(howto ? [HOWTO] : []), SOUND].map(toolButton).join('')}</div>
       </header>
       <div class="game-board"></div>
       <div class="toast" role="status" aria-live="polite"></div>
@@ -29,6 +33,7 @@ export function mountShell(root, { game, tally, actions, onAction, onHome }) {
   const toastEl = root.querySelector('.toast');
   let toastTimer = 0;
   const sheet = createSheet(screen);
+  let coach = null;
 
   function syncSound() {
     const btn = screen.querySelector('[data-act="sound"]');
@@ -50,16 +55,20 @@ export function mountShell(root, { game, tally, actions, onAction, onHome }) {
     setPressed(id, pressed) {
       screen.querySelector(`[data-act="${id}"]`)?.setAttribute('aria-pressed', String(pressed));
     },
-    toast(message) {
+    toast(message, ms = 2000) {
       toastEl.textContent = message;
       toastEl.classList.add('is-on');
       clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => toastEl.classList.remove('is-on'), 2000);
+      toastTimer = setTimeout(() => toastEl.classList.remove('is-on'), ms);
     },
     // 대화상자(sheet.js)
     ask: sheet.ask,
     closeSheet: sheet.close,
+    // 첫 판 손가락 안내(coach.js). 게임이 처음 쓸 때 만든다.
+    get coach() { coach ??= createCoach(screen, board); return coach; },
+    howto: () => howto && showHowto(sheet.ask, howto),
     destroy() {
+      coach?.hide();
       clearTimeout(toastTimer);
       ro.disconnect();
       root.innerHTML = '';
@@ -72,6 +81,7 @@ export function mountShell(root, { game, tally, actions, onAction, onHome }) {
     const act = btn.dataset.act;
     if (act === 'home') return onHome();
     if (act === 'sound') { toggleMuted(); syncSound(); return; }
+    if (act === 'howto') { coach?.hide(); api.howto(); return; }
     onAction(act);
   });
 

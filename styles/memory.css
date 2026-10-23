@@ -1,5 +1,7 @@
 /* 같은 그림 찾기: 정사각 4×4 판 (src/games/memory/memory.js) */
-.game-screen--memory .game-board { display: grid; place-items: center; touch-action: manipulation; background: var(--board-light); }
+.game-screen--memory .game-board {
+  display: grid; place-items: center; touch-action: manipulation;
+}
 .memory-grid {
   display: grid; gap: var(--gap, 10px);
   grid-template-columns: repeat(4, var(--cw, 80px)); grid-template-rows: repeat(4, var(--ch, 80px));

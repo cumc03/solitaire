@@ -1,15 +1,27 @@
 /* 첫 화면: 짙은 초록 바탕 위 흰 묶음 목록 (src/home/home.js) */
-.home { position: fixed; inset: 0; overflow-y: auto; background: var(--green-deep); }
-.home__col { width: min(600px, 100%); margin: 0 auto; padding: max(28px, 6vh) 16px 64px; }
+.home {
+  position: fixed; inset: 0; overflow-y: auto;
+  display: flex;   /* 내용 묶음을 화면 위아래 가운데에(넘치면 margin:auto가 0이 되어 위가 잘리지 않는다) */
+  /* 초록 펠트 테이블 사진(GPT Image, assets/backgrounds). 가운데는 비어 있고 가장자리에만 카드·패·연필 */
+  background: var(--green-deep) url("../assets/backgrounds/home-wide.webp") center / cover no-repeat fixed;
+}
+@media (orientation: portrait) { .home { background-image: url("../assets/backgrounds/home-tall.webp"); } }
+.home__col { position: relative; width: min(600px, 100%); margin: auto; padding: 28px 16px; }
+/* 게임별 장면: 목록의 게임에 마우스를 올리면 그 게임의 배경 사진이 천천히 드러난다(src/home/home.js, 그림 경로는 registry.js) */
+.home__scenes { position: fixed; inset: 0; pointer-events: none; }
+.home__scene {
+  position: absolute; inset: 0; background: center / cover no-repeat;
+  opacity: 0; transform: scale(1.03);
+  transition: opacity 520ms ease-out, transform 900ms var(--ease-out);
+}
+.home__scene.is-on { opacity: 1; transform: none; }
 
 .resume {
   width: 100%; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 16px;
   border: 0; border-radius: var(--radius-group); padding: 16px 18px; margin-bottom: 18px;
   background: var(--paper); color: var(--ink); text-align: left;
   box-shadow: var(--shadow-group);
-  transition: transform 90ms ease-out;
 }
-.resume:active { transform: scale(0.985); }
 .resume__icon { width: 56px; height: 56px; border-radius: 22%; object-fit: cover; }
 .resume__text { display: grid; gap: 4px; }
 .resume__text b { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; }
@@ -20,14 +32,12 @@
   background: var(--green-action); color: var(--on-action); font-size: 1.6rem;
 }
 
-.game-list { background: var(--paper); border-radius: var(--radius-group); overflow: hidden; box-shadow: var(--shadow-group); }
+.game-list { background: var(--paper); border-radius: var(--radius-group); box-shadow: var(--shadow-group); }
 .game-list__row {
-  width: 100%; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 16px;
-  border: 0; background: none; color: var(--ink); text-align: left; padding: 14px 18px;
-  transition: background 90ms;
+  position: relative; width: 100%; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 16px;
+  border: 0; border-radius: var(--radius-group); background: var(--paper); color: var(--ink); text-align: left; padding: 14px 18px;
 }
 .game-list__row + .game-list__row { box-shadow: inset 0 1px 0 var(--line); }
-.game-list__row:active { background: rgb(17 22 20 / 0.05); }
 .game-list__icon { width: 72px; height: 72px; border-radius: 22%; object-fit: cover; box-shadow: 0 2px 6px rgb(0 0 0 / 0.18); }
 .game-list__text { display: grid; gap: 3px; }
 .game-list__text b { font-size: 1.45rem; font-weight: 700; letter-spacing: -0.01em; }
@@ -39,8 +49,28 @@
   width: 100%; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px;
   border: 0; border-radius: var(--radius-group); padding: 14px 18px; margin-bottom: 18px;
   background: var(--paper); color: var(--ink); box-shadow: var(--shadow-group);
-  transition: transform 90ms ease-out;
 }
-.month-cup:active { transform: scale(0.985); }
 .month-cup .ph { font-size: 1.4rem; color: var(--ink-faint); }
 .game-list__name { display: flex; align-items: center; gap: 8px; }
+
+/* 들림(2026-10-24 선생님 선택 A안, 레퍼런스: Apple TV 초점 기울임·Oleg Frolov "VR Menu Interaction").
+   마우스를 올리면 앞으로 들리며 그림자가 짙어지고, 게임 아이콘은 마우스 쪽으로 기운다(--rx/--ry는 home.js).
+   누르는 순간에는 손가락에도 바로 내려앉는다. */
+.game-list__row, .resume, .month-cup {
+  transition: transform 260ms var(--ease-out), box-shadow 260ms var(--ease-out);
+}
+.game-list__icon, .resume__icon { transition: transform 320ms var(--ease-out), box-shadow 320ms var(--ease-out); }
+.game-list__row .ph-caret-right, .month-cup .ph-caret-right { transition: transform 260ms var(--ease-out), color 200ms ease-out; }
+:is(.game-list__row, .resume, .month-cup):active { transform: scale(0.982); transition-duration: 90ms; transition-timing-function: var(--ease-press); }
+@media (hover: hover) and (pointer: fine) {
+  :is(.game-list__row, .resume, .month-cup):hover {
+    z-index: 1;
+    transform: translateY(-4px) scale(1.015);
+    box-shadow: var(--shadow-hover);
+  }
+  :is(.game-list__row, .resume):hover :is(.game-list__icon, .resume__icon) {
+    transform: perspective(420px) rotateY(var(--rx, 0deg)) rotateX(var(--ry, 0deg)) translateZ(14px) scale(1.06);
+    box-shadow: var(--shadow-icon-lift);
+  }
+  :is(.game-list__row, .month-cup):hover .ph-caret-right { transform: translateX(5px); color: var(--green-action); }
+}

@@ -11,6 +11,22 @@ const GAME = 'memory';
 const PAIRS = 8;
 const MISMATCH_MS = 900;
 
+// '방법' 카드 장면: 실제 카드 모양(.mcard)으로 그린 네 장
+const miniCards = (cards, x = null, y = null) => `<div class="memory-mini">${cards.map(([pic, up, matched]) => `
+  <span class="mcard${up ? ' is-up' : ''}${matched ? ' is-matched' : ''}"><span class="mcard__inner">
+    <span class="mcard__face mcard__front"><img src="${pictureSrc(pic)}" alt="" draggable="false"></span>
+    <span class="mcard__face mcard__back"></span>
+  </span></span>`).join('')}${x === null ? '' : `<i class="ph-fill ph-hand-pointing howto__finger" style="left:${x}px;top:${y}px"></i>`}</div>`;
+
+const HOWTO = {
+  title: '같은 그림 찾기 하는 법',
+  cards: [
+    { text: '카드 두 장을 차례로 뒤집어 같은 그림을 찾으세요.', scene: miniCards([['persimmon', true], ['tulip', false], ['persimmon', false], ['cat', false]], 182, 50) },
+    { text: '같은 그림이면 열린 채로 남고, 다르면 잠시 뒤 다시 덮입니다.', scene: miniCards([['persimmon', true, true], ['tulip', false], ['persimmon', true, true], ['cat', false]]) },
+    { text: '모든 짝을 찾으면 끝입니다. 뒤집은 횟수가 적을수록 좋아요.', scene: miniCards([['persimmon', true, true], ['tulip', true, true], ['persimmon', true, true], ['tulip', true, true]]) },
+  ],
+};
+
 export const entry = {
   mount,
   describeSave: (save) => `찾은 짝 ${save.state.cards.filter((c) => c.matched).length / 2}개, ${formatMinutes(save.elapsedMs)}`,
@@ -29,6 +45,7 @@ function mount(root, { onHome }) {
     actions: [{ id: 'new', icon: 'ph-plus-circle', label: '새 게임' }],
     onAction: (a) => { if (a === 'new') askNewGame(); },
     onHome: () => { persist(); onHome(); },
+    howto: HOWTO,
   });
   const board = shell.board;
   board.setAttribute('aria-label', '같은 그림 찾기 판');
