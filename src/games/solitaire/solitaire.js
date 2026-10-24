@@ -6,6 +6,7 @@ import { mountShell } from '../../core/shell.js';
 import { createClock, formatTime, formatMinutes } from '../../core/clock.js';
 import { addWin, bumpTip, clearSave, getSave, putSave, tipCount } from '../../core/records.js';
 import { winProgressHtml } from '../../core/progress-view.js';
+import { playFinale } from './finale.js';
 
 const GAME = 'solitaire';
 const RANK_LABEL = { 1: 'A', 11: 'J', 12: 'Q', 13: 'K' };
@@ -270,17 +271,21 @@ function mount(root, { onHome }) {
     if (choice === 'undo') doUndo();
   }
 
+  // 자동 마무리: 남은 카드가 한 장씩 모을 자리로 날아간다. 처음엔 천천히, 갈수록 빨라진다(필요하면 더미도 넘긴다).
   function autoFinish() {
     busy = true;
     shell.setDisabled('undo', true);
+    let delay = 190;
     const step = () => {
+      const before = state.foundations.reduce((n, f) => n + f.length, 0);
       if (!K.autoFinishStep(state)) { busy = false; return changed(); }
       render();
-      play('place');
-      if (state.won) { busy = false; return win(); }
-      setTimeout(step, 120);
+      play(state.foundations.reduce((n, f) => n + f.length, 0) > before ? 'place' : 'flip');
+      if (state.won) { busy = false; return setTimeout(win, 420); }
+      delay = Math.max(60, delay * 0.9);
+      setTimeout(step, delay);
     };
-    setTimeout(step, 250);
+    setTimeout(step, 300);
   }
 
   async function win() {
@@ -291,7 +296,8 @@ function mount(root, { onHome }) {
     render();
     clearSave(GAME);
     const { record, improved, monthCount } = addWin(GAME, { score: state.score, time: elapsedMs }, { score: 'max', time: 'min' });
-    play('win');
+    // 끝 장면(빛 물결)을 보여 준 뒤 창을 띄운다. 무늬는 창 뒤에서 계속 떨어지고, 창을 닫으면 정리한다.
+    const cleanup = await playFinale({ board, kings: state.foundations.map((f) => cards.get(f[f.length - 1].id).el) });
     const lines = [`점수 ${state.score.toLocaleString()}점${bonus ? ` (시간 보너스 ${bonus.toLocaleString()}점 포함)` : ''}`, `걸린 시간 ${formatTime(elapsedMs)}`];
     if (improved.includes('score')) lines.push('최고 점수를 새로 세웠어요');
     const choice = await shell.ask({
@@ -300,6 +306,7 @@ function mount(root, { onHome }) {
       extra: winProgressHtml(record.wins, monthCount),
       choices: [{ id: 'new', label: '새 게임', primary: true }, { id: 'home', label: '처음으로' }],
     });
+    cleanup();
     if (choice === 'new') askNewGame();
     else onHome();
   }
@@ -543,8 +550,11 @@ function mount(root, { onHome }) {
   ro.observe(board);
   layout();
 
-  if (state) clock.start();
-  else askNewGame();
+  if (state) {
+    clock.start();
+    // 이어 하는 판이 이미 끝까지 올릴 수 있는 상태면 바로 마무리한다
+    if (!state.won && K.canAutoFinish(state)) setTimeout(autoFinish, 600);
+  } else askNewGame();
   tick();
   const timer = setInterval(tick, 1000);
   window.addEventListener('pagehide', persist);

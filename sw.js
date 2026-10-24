@@ -1,7 +1,7 @@
 // 서비스 워커: 한 번 열면 앱 파일 전부를 기기에 저장해 두고, 인터넷이 없어도 저장본으로 연다.
 // 인터넷이 되면 늘 새 파일을 받아 저장본을 갈아 끼우므로 고친 내용은 다음에 열 때 바로 반영된다.
 // FILES 목록이 바뀌면 VERSION을 올린다(옛 저장본은 지워진다). 빠진 파일은 tests/offline.test.mjs가 잡는다.
-const VERSION = 'v10';
+const VERSION = 'v11';
 const CACHE = `game-room-${VERSION}`;
 
 const FILES = [
@@ -13,7 +13,7 @@ const FILES = [
   './src/core/clock.js', './src/core/records.js', './src/core/shell.js', './src/core/sound.js', './src/core/spring.js', './src/core/storage.js',
   './src/home/home.js',
   './src/games/registry.js',
-  './src/games/solitaire/rules.js', './src/games/solitaire/solitaire.js',
+  './src/games/solitaire/rules.js', './src/games/solitaire/solitaire.js', './src/games/solitaire/finale.js',
   './src/games/memory/memory.js',
   './src/games/sudoku/generator.js', './src/games/sudoku/sudoku.js',
   './src/games/pictures.js', './src/games/sichuan/rules.js', './src/games/sichuan/sichuan.js',

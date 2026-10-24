@@ -47,3 +47,17 @@
 
 .card.is-hint .card__face, .slot.is-hint { outline: 4px solid var(--hint); outline-offset: 2px; animation: hint-pulse 900ms ease-in-out 2; }
 @keyframes hint-pulse { 50% { outline-offset: 6px; } }
+
+/* 끝 장면 "빛 물결"(src/games/solitaire/finale.js). 대화상자(3500)보다 아래 층 */
+.finale { position: absolute; inset: 0; z-index: 3000; overflow: hidden; }
+.finale.is-behind { pointer-events: none; }
+.finale__sweep {
+  position: absolute; border-radius: var(--card-radius); pointer-events: none; mix-blend-mode: screen;
+  background: linear-gradient(105deg, transparent 35%, var(--finale-glint) 50%, transparent 65%) no-repeat;
+  background-size: 60% 100%; background-position: -120% 0;
+}
+.finale__suit { position: absolute; top: -40px; filter: drop-shadow(0 4px 6px rgb(0 0 0 / 0.3)); }
+.finale__suit svg { width: 100%; height: 100%; display: block; }
+.finale__suit.is-red { fill: var(--red-suit); }
+.finale__suit.is-black { fill: var(--black-suit); }
+.finale__suit.is-gold { fill: var(--hint); }

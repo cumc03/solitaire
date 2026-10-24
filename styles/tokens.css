@@ -5,6 +5,7 @@
   --green-deep: #0f4b2e;      /* 첫 화면·막대 바탕 */
   --green-felt: #1a6a43;      /* 솔리테어 판 */
   --board-light: #eef3f0;     /* 같은 그림 찾기·스도쿠 판(밝은 바탕) */
+  --finale-glint: rgb(255 236 170 / 0.85);  /* 솔리테어 끝 장면 금빛 한 줄기 */
   --bar-glass: rgb(8 34 22 / 0.78);  /* 게임 화면 위 막대: 장면 사진 위 어두운 반투명 유리 */
   --green-action: #1f9d55;    /* 주 단추 하나 */
   --paper: #fdfdfc;           /* 흰 카드·묶음 */

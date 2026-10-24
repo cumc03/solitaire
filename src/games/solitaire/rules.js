@@ -200,21 +200,33 @@ export function findHint(s) {
   return null;
 }
 
+// 판의 카드가 모두 앞면이면, 남은 더미·넘긴 칸까지 넘겨 가며 끝까지 올릴 수 있는지 사본으로 미리 해 본다
 export function canAutoFinish(s) {
-  return s.stock.length === 0 && s.waste.length === 0 && s.tableau.every((p) => p.every((c) => c.up));
+  if (!s.tableau.every((p) => p.every((c) => c.up))) return false;
+  const t = structuredClone({ ...s, history: [] });
+  for (let k = 0; k < 1000 && !t.won; k++) if (!autoFinishStep(t)) return false;
+  return t.won;
 }
 
-// 자동 마무리 한 걸음
+// 자동 마무리 한 걸음: 넘긴 칸·판 맨 위 카드를 모을 자리로. 올릴 게 없으면 더미를 넘긴다.
+// 더미를 한 바퀴 다 돌아도 올린 카드가 없으면 멈춘다(false). 연달아 넘긴 횟수는 s.idleDraws에 센다.
 export function autoFinishStep(s) {
-  for (let t = 0; t < 7; t++) {
-    const pile = s.tableau[t];
-    if (!pile.length) continue;
-    const from = { zone: 'tableau', pile: t, index: pile.length - 1 };
+  const tops = [
+    ...(s.waste.length ? [{ zone: 'waste', pile: 0, index: s.waste.length - 1 }] : []),
+    ...s.tableau.map((pile, t) => pile.length && { zone: 'tableau', pile: t, index: pile.length - 1 }).filter(Boolean),
+  ];
+  for (const from of tops) {
     for (let f = 0; f < 4; f++) {
-      if (move(s, from, { zone: 'foundation', pile: f })) return true;
+      if (move(s, from, { zone: 'foundation', pile: f })) {
+        s.idleDraws = 0;
+        return true;
+      }
     }
   }
-  return false;
+  const cycle = s.stock.length + s.waste.length;
+  if (!cycle || (s.idleDraws ?? 0) > cycle + 1) return false;
+  s.idleDraws = (s.idleDraws ?? 0) + 1;
+  return draw(s);
 }
 
 // 더 둘 곳이 있는지: 판 위 의미 있는 움직임, 또는 남은 카드 더미를 한 바퀴 넘기며 쓸 수 있는 카드
