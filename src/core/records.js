@@ -6,11 +6,9 @@ export function getRecord(game) {
   return load(`record:${game}`, { wins: 0, best: {} });
 }
 
-// better: 각 기록 항목이 클수록 좋은지(max) 작을수록 좋은지(min)
-export function addWin(game, result, better) {
-  const rec = getRecord(game);
-  rec.wins += 1;
-  // improved: 앞선 기록이 있었고 그것을 넘어선 항목(첫 기록은 들지 않는다)
+// 최고 기록 갱신. better: 각 기록 항목이 클수록 좋은지(max) 작을수록 좋은지(min).
+// improved: 앞선 기록이 있었고 그것을 넘어선 항목(첫 기록은 들지 않는다)
+function improve(rec, result, better) {
   const improved = [];
   for (const [key, value] of Object.entries(result)) {
     const prev = rec.best[key];
@@ -20,6 +18,14 @@ export function addWin(game, result, better) {
       improved.push(key);
     }
   }
+  return improved;
+}
+
+// 이긴 판: 판 수·이달의 컵을 더하고 최고 기록을 갱신한다
+export function addWin(game, result, better) {
+  const rec = getRecord(game);
+  rec.wins += 1;
+  const improved = improve(rec, result, better);
   save(`record:${game}`, rec);
   // 이달의 컵: 네 게임에서 이긴 판을 달별로 함께 센다
   const monthly = getMonthly();
@@ -27,6 +33,14 @@ export function addWin(game, result, better) {
   monthly[month] = (monthly[month] ?? 0) + 1;
   save('monthly', monthly);
   return { record: rec, improved, monthCount: monthly[month] };
+}
+
+// 이기지 못한 판의 기록: 판 수·이달의 컵은 더하지 않고 최고 기록만 갱신한다(예: 블록 쌓기에서 꽉 차 끝난 판의 점수)
+export function noteBest(game, result, better) {
+  const rec = getRecord(game);
+  const improved = improve(rec, result, better);
+  save(`record:${game}`, rec);
+  return { record: rec, improved };
 }
 
 export const getSave = (game) => load(`save:${game}`, null);

@@ -1,0 +1,144 @@
+/* 블록 쌓기: 세로 판·다음 블록·조작(단추 넷 + PC 키보드 안내) (src/games/blocks/blocks.js). 칸 크기 --cell은 화면 맞춤 계산이 넣는다.
+   좁은 화면은 판 옆에 다음 블록, 아래에 조작(단추 한 줄 + 키보드 안내 두 줄).
+   넓은 화면(.is-wide)은 왼쪽 다음 블록 · 가운데 판 · 오른쪽 조작(단추 2×2 + 바로 아래 키보드 안내).
+   조작은 한곳에 모은다(2026-10-25 선생님 결정: 키 안내가 좌우로 나뉘어 있었다). */
+.game-screen--blocks .game-board { display: grid; place-items: center; touch-action: none; }
+.blocks {
+  /* 좁은 화면: 판과 다음 블록은 가운데에 나란히, 조작 칸은 그 아래에 화면 폭을 다 쓴다(판 폭에 묶이면 키보드 안내가 세로로 길어져 판이 작아진다) */
+  display: grid; width: 100%; grid-template-areas: ". well side ." "controls controls controls controls";
+  grid-template-columns: minmax(0, 1fr) auto auto minmax(0, 1fr);
+  gap: 12px 0; padding: 10px; align-items: start; max-width: 100%;
+}
+.blocks:not(.is-wide) .blocks__side { margin-left: 14px; }
+.blocks.is-wide { width: auto; grid-template-areas: "side well controls"; grid-template-columns: auto auto auto; align-items: center; gap: 28px; }
+.blocks__controls { grid-area: controls; display: grid; gap: 12px; min-width: 0; }
+.blocks.is-wide .blocks__controls { justify-items: center; }
+
+/* 판: 장면 사진 위 어두운 반투명 틀, 칸은 정사각 */
+.blocks__well {
+  grid-area: well; position: relative;
+  display: grid; grid-template-columns: repeat(10, var(--cell, 24px)); grid-auto-rows: var(--cell, 24px); gap: 1px;
+  padding: 6px; border-radius: 14px; background: var(--well-glass);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14), var(--shadow-group);
+}
+.bcell { --c: transparent; border-radius: 18%; background: var(--well-cell); }
+.bcell[data-v="1"] { --c: var(--block-1); }
+.bcell[data-v="2"] { --c: var(--block-2); }
+.bcell[data-v="3"] { --c: var(--block-3); }
+.bcell[data-v="4"] { --c: var(--block-4); }
+.bcell[data-v="5"] { --c: var(--block-5); }
+.bcell[data-v="6"] { --c: var(--block-6); }
+.bcell[data-v="7"] { --c: var(--block-7); }
+/* 놓인 블록·떨어지는 블록: 위는 밝고 아래는 어두운 띠로 두께를 낸다 */
+.bcell[data-v]:not([data-v=""]):not(.is-ghost) { background: var(--c); box-shadow: inset 0 2px 0 rgb(255 255 255 / 0.34), inset 0 -3px 0 rgb(0 0 0 / 0.2); }
+/* 내려앉을 자리: 그 블록 색의 테두리만 */
+.bcell.is-ghost { background: var(--well-cell); box-shadow: inset 0 0 0 2px var(--c); opacity: 0.8; }
+/* 지워지는 줄: 하얗게 한 번 번쩍인 뒤 사라진다 */
+.bcell.is-clearing { background: var(--paper); box-shadow: none; animation: bcell-flash 260ms ease-out both; }
+@keyframes bcell-flash { from { background: var(--paper); } to { background: rgb(255 255 255 / 0.55); } }
+
+/* 덮개: 멈춤·이어 하기 때 판 위에 "누르면 시작" */
+.blocks__cover {
+  position: absolute; inset: 0; z-index: 2; border: 0; border-radius: inherit; cursor: pointer;
+  display: grid; place-content: center; justify-items: center; gap: 12px;
+  background: rgb(0 0 0 / 0.5); color: var(--on-green); font-weight: 800; font-size: 1.35rem; letter-spacing: -0.01em;
+  backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+}
+.blocks__cover[hidden] { display: none; }
+.blocks__cover .ph-fill {
+  width: 84px; height: 84px; border-radius: 50%; font-size: 2.6rem;
+  background: var(--green-action); display: grid; place-items: center; box-shadow: var(--shadow-group);
+  transition: transform 260ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) { .blocks__cover:hover .ph-fill { transform: scale(1.06); } }
+.blocks__cover:active .ph-fill { transform: scale(0.95); transition-duration: 90ms; transition-timing-function: var(--ease-press); }
+
+/* 다음 블록 */
+.blocks__side { grid-area: side; display: grid; gap: 12px; align-content: start; justify-items: start; }
+.blocks.is-wide .blocks__side { justify-items: end; }
+.blocks__next {
+  display: grid; gap: 8px; justify-items: center; padding: 10px 14px 12px;
+  border-radius: var(--radius-button); background: var(--paper); color: var(--ink); box-shadow: var(--shadow-card);
+}
+.blocks__next small { font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); }
+.blocks-mini {
+  display: grid; grid-template-columns: repeat(var(--cols, 4), var(--mini, 20px)); grid-auto-rows: var(--mini, 20px); gap: 1px;
+  padding: 4px; border-radius: 8px; background: var(--well-glass);
+}
+.blocks-mini--next { --mini: clamp(12px, calc(var(--cell, 24px) * 0.7), 26px); }
+.blocks__side { min-width: 0; }
+
+/* 조작 단추 넷: 종이 바탕 큰 단추(스도쿠 숫자 단추와 같은 결) */
+.pad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: 100%; }
+.pad__btn {
+  min-height: 84px; border: 0; padding: 0; border-radius: var(--radius-button);
+  background: var(--paper); color: var(--ink); outline: 1px solid var(--line); box-shadow: var(--shadow-card);
+  display: grid; place-items: center; align-content: center; gap: 2px;
+  font-size: 0.95rem; font-weight: 700;
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+  transition: transform 70ms ease-out, background-color 90ms;
+}
+.pad__btn .ph { font-size: 2.1rem; }
+.pad__btn.is-held, .pad__btn:active { transform: scale(0.95); background: var(--select-strong); }
+.blocks.is-wide .pad { width: auto; grid-template-columns: repeat(2, clamp(84px, 8vw, 116px)); grid-auto-rows: clamp(84px, 8vw, 116px); }
+.blocks.is-wide .pad__btn { min-height: 0; font-size: 1.05rem; }
+.blocks.is-wide .pad__btn .ph { font-size: 2.4rem; }
+
+/* 키보드 키(2026-10-25 선생님 지적: 키보드로 돌리기가 무엇인지 알려야 한다).
+   단추 귀퉁이 키는 마우스로 가리키는 기기(PC)에서만 보인다. blocks.js의 hasKeyboard()와 같은 조건 */
+.keycap {
+  display: inline-grid; place-items: center; min-width: 1.9em; height: 1.7em; padding: 0 7px;
+  border: 1.5px solid var(--grid-line); border-bottom-width: 3px; border-radius: 7px;
+  background: var(--paper-muted); color: var(--ink); font-family: var(--font); font-size: 0.95rem; font-weight: 800; line-height: 1;
+}
+.pad__name { display: flex; align-items: center; gap: 6px; }
+.pad .pad__key { display: none; font-size: 1.05rem; min-width: 1.75em; height: 1.55em; }
+@media (hover: hover) and (pointer: fine) { .pad .pad__key { display: inline-grid; } }
+
+/* 판 옆 키보드 안내(PC만): 키캡 + 하는 일(굵게) + 키 이름 */
+.keycap--wide { min-width: 4.6em; font-size: 0.85rem; }
+.blocks-keyguide { display: none; }
+@media (hover: hover) and (pointer: fine) {
+  .blocks-keyguide {
+    display: grid; gap: 8px; width: 100%; padding: 12px 14px 14px;
+    border-radius: var(--radius-button); background: var(--paper); color: var(--ink); box-shadow: var(--shadow-card);
+  }
+}
+.blocks-keyguide > small { font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); justify-self: center; }
+.blocks-keyguide ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
+.blocks-keyguide li { display: grid; grid-template-columns: 5rem minmax(0, 1fr); align-items: center; gap: 10px; }
+.blocks-keyguide li .keycap { justify-self: center; }
+.blocks.is-wide .blocks-keyguide { width: max(100%, 16rem); }
+.blocks:not(.is-wide) .blocks-keyguide ul { grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr)); gap: 8px 14px; }
+.blocks-keyguide li span { display: grid; line-height: 1.25; min-width: 0; }
+.blocks-keyguide b { font-size: 1rem; font-weight: 700; }
+.blocks-keyguide li small { font-size: 0.82rem; color: var(--ink-soft); }
+
+/* '방법' 카드의 키보드 장: 화살표 네 개 + 스페이스·P */
+.blocks-keys {
+  display: grid; gap: 16px; justify-items: center; padding: 16px 22px;
+  border-radius: var(--radius-button); background: var(--paper); color: var(--ink); box-shadow: var(--shadow-card);
+}
+.blocks-keys__arrows { display: grid; grid-template-columns: repeat(3, 72px); gap: 8px 10px; }
+.blocks-keys__row { display: flex; gap: 18px; }
+.blocks-keys__item { display: grid; justify-items: center; gap: 4px; }
+.blocks-keys__item .keycap { min-width: 52px; height: 44px; font-size: 1.4rem; }
+.blocks-keys__item .keycap--wide { min-width: 150px; font-size: 1rem; }
+.blocks-keys__item small { font-size: 0.85rem; font-weight: 700; color: var(--ink-soft); }
+
+/* '방법' 카드 속 장면: 작은 판과 실제 단추 모양 */
+.blocks-howto { display: grid; gap: 14px; justify-items: center; padding: 14px; }
+.blocks-howto .blocks-mini { --mini: 24px; }
+.blocks-howto__pad { position: relative; display: flex; gap: 10px; }
+.pad__btn--chip { min-height: 64px; width: 84px; pointer-events: none; }
+.blocks-howto .howto__finger { position: absolute; }
+.blocks-goal {
+  display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px;
+  background: rgb(0 0 0 / 0.38); color: var(--on-green); font-weight: 700; font-size: 1.05rem; font-variant-numeric: tabular-nums;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18);
+}
+.blocks-goal .ph { font-size: 1.35rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .bcell.is-clearing { animation: none; }
+}

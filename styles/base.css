@@ -18,7 +18,8 @@ button:disabled { cursor: default; opacity: 0.38; }
 h1, h2, p { margin: 0; }
 .ph { line-height: 1; }
 
-/* 휴대폰 세로로 솔리테어를 열면 돌려 달라는 안내 */
+/* 휴대폰에서 게임이 바라는 방향(registry.js의 orientation → html[data-orient])과 다르게 들면 돌려 달라는 안내.
+   가로를 바라는 게임(솔리테어)은 세로로 들었을 때, 세로를 바라는 게임(블록 쌓기)은 가로로 들었을 때 뜬다. */
 .rotate-hint {
   position: fixed; inset: 0; z-index: 4000; display: none;
   flex-direction: column; align-items: center; justify-content: center; gap: 20px;
@@ -26,8 +27,14 @@ h1, h2, p { margin: 0; }
   font-weight: 700; font-size: 1.4rem; line-height: 1.4;
 }
 .rotate-hint .ph { font-size: 5rem; }
+.rotate-hint p { display: none; }
 @media (orientation: portrait) and (max-width: 700px) {
-  html[data-screen="solitaire"] .rotate-hint { display: flex; }
+  html[data-orient="landscape"] .rotate-hint { display: flex; }
+  html[data-orient="landscape"] .rotate-hint p[data-for="landscape"] { display: block; }
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  html[data-orient="portrait"] .rotate-hint { display: flex; }
+  html[data-orient="portrait"] .rotate-hint p[data-for="portrait"] { display: block; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -34,6 +34,17 @@
   --on-action: #ffffff;       /* 초록 단추 위 글자 */
   --scrim: rgb(0 0 0 / 0.5);  /* 대화상자 뒤 어두운 막 */
 
+  /* 블록 쌓기(2026-10-25 선생님 결정: 서로 뚜렷이 다른 부드러운 7색, 공식 제품의 배색과 다르게). 순서는 rules.js의 KINDS(I·O·T·S·Z·J·L) */
+  --block-1: #4fb0bb;   /* I 청록 */
+  --block-2: #dcb44e;   /* O 겨자 */
+  --block-3: #a383d0;   /* T 라벤더 */
+  --block-4: #74b86f;   /* S 세이지 */
+  --block-5: #d6705f;   /* Z 벽돌 */
+  --block-6: #5e88d2;   /* J 수레국화 */
+  --block-7: #e0925c;   /* L 살구 */
+  --well-glass: rgb(10 24 36 / 0.62);   /* 블록 판: 장면 사진 위 어두운 반투명 틀 */
+  --well-cell: rgb(255 255 255 / 0.06); /* 블록 판의 빈칸 */
+
   --radius-group: 22px;
   --radius-button: 16px;
   --shadow-group: 0 10px 30px rgb(0 0 0 / 0.3);
